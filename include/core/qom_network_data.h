@@ -3,11 +3,10 @@
 
 #include "graph.h"
 
-
 class qom_network_data
 {
 public:
-     void build_network(graph& graph);
+     void build_network(graph &graph);
 };
 
-#endif 
+#endif
