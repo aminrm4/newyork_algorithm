@@ -12,9 +12,9 @@ public:
     edge();
     edge(int destination_id, double distance_km, double time_min);
 
-    int get_destination() ;
-    double get_distance() ;
-    double get_time() ;
+    int get_destination();
+    double get_distance();
+    double get_time();
 };
 
 #endif

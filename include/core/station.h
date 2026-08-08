@@ -1,5 +1,5 @@
-#ifndef STATION_H
-#define STATION_H
+#ifndef station_h
+#define station_h
 
 #include <bits/stdc++.h>
 using namespace std;
@@ -12,10 +12,10 @@ private:
 
 public:
     station();
-    station(int station_id, string &station_name);
+    station(int station_id, const string &station_name);
 
     int get_id();
-    string & get_name();
+    string &get_name();
 };
 
 #endif
