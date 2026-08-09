@@ -10,6 +10,7 @@ set(CORE_SOURCES
     src/core/edge.cpp
     src/core/graph.cpp
     src/core/qom_network_data.cpp
+    src/core/train.cpp
 )
 
 # --- pathfinding algorithms 
