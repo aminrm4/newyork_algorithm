@@ -44,38 +44,6 @@ void max_flow_algorithm::reset_residual_capacity(){
     residual_capacity = capacity_matrix;
 }
 
-// TODO: replace temporary bfs with teammates bfs 
-bool max_flow_algorithm::bfs(int source_id, int sink_id, vector<int>& parent){
-    int station_count = graph.get_station_count();
-
-    parent.assign(station_count, -1);
-
-    vector<bool> visited(station_count, false);
-
-    queue<int> stations_queue;
-
-    stations_queue.push(source_id);
-    visited[source_id] = true;
-
-    while (!stations_queue.empty()){
-        int current = stations_queue.front();
-        stations_queue.pop();
-
-        for (int next = 0; next < station_count; next++){
-            if (!visited[next] && residual_capacity[current][next] > 0.0){
-                parent[next] = current;
-                visited[next] = true;
-
-                if (next == sink_id)
-                    return true;
-                
-                stations_queue.push(next);
-            }
-        }
-    }
-    return false;
-}
-
 // Endmonds-Karp 
 max_flow_result max_flow_algorithm::find_max_flow(int source_id, int sink_id){
     if (!graph.has_station(source_id) || !graph.has_station(sink_id))
@@ -93,7 +61,19 @@ max_flow_result max_flow_algorithm::find_max_flow(int source_id, int sink_id){
 
     double total_flow = 0.0;
 
-    while (bfs(source_id, sink_id, parent)){
+    bfs_traversal traversal;
+
+    auto get_residual_neighbors = [this, station_count](int current_id) -> vector<int> {
+        vector<int> neighbors;
+        for (int next = 0; next < station_count; next++){
+            if(residual_capacity[current_id][next] > 0.0)
+                neighbors.push_back(next);
+        }
+
+        return neighbors;
+    };
+
+    while (traversal.search(source_id, sink_id, station_count, parent, get_residual_neighbors)){
         double path_flow = numeric_limits<double>::infinity();
         int current = sink_id;
 

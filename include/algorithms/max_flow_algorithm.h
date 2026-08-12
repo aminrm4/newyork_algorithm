@@ -1,5 +1,6 @@
 # pragma once
 #include "interface_graph.h"
+#include "bfs_traversal.h"
 #include <vector>
 
 struct max_flow_result{
@@ -16,7 +17,6 @@ class max_flow_algorithm {
         vector<vector<double>> capacity_matrix;
         vector<vector<double>> residual_capacity;
 
-        bool bfs(int source_id, int sink_id, vector<int>& parent);
         void build_capacity_matrix(double defualt_capacity);
         void reset_residual_capacity();
 };
