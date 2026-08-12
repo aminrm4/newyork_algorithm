@@ -5,6 +5,7 @@
 #include "station.h"
 #include "edge.h"
 #include "path_result.h"
+#include "dfs_traversal.h"
 
 class dfs_algorithm
 {
@@ -16,8 +17,6 @@ public:
 
 private:
     interface_graph& graph;
-
-    bool visit(int current_id, int target_id, vector<bool>& visited, vector<int>& parent);
 };
 
 #endif
