@@ -5,6 +5,7 @@
 #include "station.h"
 #include "edge.h"
 #include "path_result.h"
+#include "bfs_traversal.h"
 
 class bfs_algorithm
 {

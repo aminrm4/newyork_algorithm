@@ -1,5 +1,4 @@
 #include "bfs_algorithm.h"
-#include <queue>
 #include <algorithm>
 
 bfs_algorithm::bfs_algorithm(interface_graph& graph_ref): graph(graph_ref)
@@ -15,40 +14,25 @@ PathResult bfs_algorithm::find_path(int start_id, int target_id)
 {
     PathResult result;
 
+    if(!graph.has_station(start_id) || !graph.has_station(target_id))
+        throw out_of_range("invalid station id");
+
     int station_count = graph.get_station_count();
-    vector<bool> visited(station_count, false);
-    vector<int> parent(station_count, -1);
+    bfs_traversal traversal;
+    vector<int> parent;
 
-    queue<int> my_queue;
-    my_queue.push(start_id);
-    visited[start_id] = true;
+    auto get_neighbors = [this](int current_id) -> vector<int> {
+        vector<int> result;
 
-    while (!my_queue.empty())
-    {
-        int current = my_queue.front();
-        my_queue.pop();
-
-        if (current == target_id)
-        {
-            break;
+        for (auto& e : graph.get_neighbors(current_id)){
+            result.push_back(e.get_destination());
         }
-
-        for (auto& e : graph.get_neighbors(current))
-        {
-            int neighbor = e.get_destination();
-            if (!visited[neighbor])
-            {
-                visited[neighbor] = true;
-                parent[neighbor] = current;
-                my_queue.push(neighbor);
-            }
-        }
-    }
-
-    if (!visited[target_id])
-    {
         return result;
-    }
+    };
+
+    bool found = traversal.search(start_id, target_id, station_count, parent, get_neighbors);
+
+    if(!found) return result;
 
     vector<int> path;
     for (int at = target_id; at != -1; at = parent[at])
