@@ -10,7 +10,8 @@ set(CORE_SOURCES
     src/core/edge.cpp
     src/core/graph.cpp
     src/core/qom_network_data.cpp
-    src/core/train.cpp
+    src/core/train.cc
+    src/core/passenger.cpp
 )
 
 # --- pathfinding algorithms 
@@ -18,6 +19,15 @@ set(ALGORITHM_SOURCES
     src/algorithms/bfs_algorithm.cpp
     src/algorithms/dfs_algorithm.cpp
     src/algorithms/dijkstra_algorithm.cpp
+    src/algorithms/dispatch_queue.cpp
+    src/algorithms/min_heap.cpp
+    src/algorithms/network_analytics.cpp
+    src/algorithms/passenger_simulator.cpp
+    src/algorithms/platform_scheduler.cc
+
+
+
+
 )
 
 
