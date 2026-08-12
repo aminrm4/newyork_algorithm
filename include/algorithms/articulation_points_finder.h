@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include "interface_graph.h"
+#include "dfs_traversal.h"
 
 struct articulation_result{
     vector<int> articulation_points;
@@ -23,5 +24,4 @@ class articulation_points_finder{
         vector<bool> is_articulation_point;
 
         vector<pair<int, int>> bridges;
-        void dfs(int current_id);
 };
