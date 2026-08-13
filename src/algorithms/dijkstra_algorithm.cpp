@@ -24,6 +24,10 @@ PathResult dijkstra_algorithm::find_shortest_path(int start_id,int target_id,rou
 {
     PathResult result;
 
+    if(!graph.has_station(start_id) || !graph.has_station(target_id)){
+        throw out_of_range("invalid station_id");
+    }
+
     int station_count = graph.get_station_count();
     double infinity = numeric_limits<double>::infinity();
 
@@ -70,4 +74,20 @@ PathResult dijkstra_algorithm::find_shortest_path(int start_id,int target_id,rou
             }
         }
     }
+    if (best_cost[target_id] == infinity)
+        return result;
+
+    vector<int> path;
+
+    for (int at = target_id; at != -1; at = parent[at]){
+        path.push_back(at);
+    }
+
+    reverse(path.begin(), path.end());
+
+    result.reach_able = true;
+    result.path = path;
+    result.total_cost = best_cost[target_id];
+
+    return result;
 }
