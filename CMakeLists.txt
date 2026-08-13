@@ -28,6 +28,9 @@ target_include_directories(qom_metro_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include/core
     ${CMAKE_CURRENT_SOURCE_DIR}/include/algorithms
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/controller
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui
+
 )
 
 add_executable(newyorkmetro
