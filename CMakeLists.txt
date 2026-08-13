@@ -24,6 +24,8 @@ set(ALGORITHM_SOURCES
     src/algorithms/network_analytics.cpp
     src/algorithms/passenger_simulator.cpp
     src/algorithms/platform_scheduler.cc
+    src/algorithms/levenshtein_search.cpp
+
 
 
 
