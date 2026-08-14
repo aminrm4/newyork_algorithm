@@ -16,3 +16,10 @@ struct MSTResult
     {
     }
 };
+
+struct MSTComparisonResult{
+    MSTResult kruskal_result;
+    MSTResult prim_result;
+    double kruskal_time_ms = 0.0;
+    double prim_time_ms = 0.0;
+};
