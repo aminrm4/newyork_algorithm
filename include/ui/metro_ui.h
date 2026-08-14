@@ -21,6 +21,7 @@ class metro_ui{
         void show_platform_scheduling();
         void show_train_dispatch_queue();
         void show_network_analytics();
+        void show_passenger_simulation();
     public:
         explicit metro_ui(metro_system& system_ref);
         void run();

@@ -16,6 +16,7 @@
 #include "train.h"
 #include "dispatch_queue.h"
 #include "network_analytics.h"
+#include "passenger_simulator.h"
 
 class metro_system {
     private:
@@ -38,6 +39,7 @@ class metro_system {
         dispatch_queue train_dispatch_queue;
 
         network_analytics analytics;
+        passenger_simulator passenger_sim;
 
         void build_express_network();
         void build_incentive_network(bool create_negative_cycle = false);
@@ -66,9 +68,16 @@ class metro_system {
         train peek_next_train() const;
         bool dispatch_queue_empty() const;
         size_t dispatch_queue_size() const;
+        
         void record_trip(int station_id);
         void finish_day();
         double get_avg_daily_trips();
         int get_kth_busiest_station(int);
 
+        void configure_gate(int gate_capacity);
+        void simulate_passenger_arrivals(int current_time, int max_random_passengers);
+        void process_passenger_gate(int current_time);
+        double get_avg_passenger_waiting_time() const;
+        int get_gate_queue_size() const;
+        int get_processed_passenger_count() const;
 };

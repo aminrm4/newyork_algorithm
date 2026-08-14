@@ -22,6 +22,8 @@ void metro_ui::run(){
     show_train_dispatch_queue();
     cout << '\n';
     show_network_analytics();
+    cout << '\n';
+    show_passenger_simulation();
 }
 
 void metro_ui::show_network_info(){
@@ -387,4 +389,63 @@ void metro_ui::show_network_analytics(){
     catch (const out_of_range&){
         cout << "Invalid k.\n";
     }
+}
+
+void metro_ui::show_passenger_simulation(){
+    cout << "--- T3.4: Passenger Arrival Simulation ---\n";
+
+    int gate_capacity;
+    cout << "Gate capacity (passengers processed per time step): ";
+    cin >> gate_capacity;
+
+    if (gate_capacity <= 0){
+        cout << "Invalid gate capacity.\n";
+        return;
+    }
+
+    int time_steps;
+    cout << "Number of time steps to simulate: ";
+    cin >> time_steps;
+
+    if (time_steps <= 0){
+        cout << "Invalid number of time steps.\n";
+        return;
+    }
+
+    int max_arrivals_per_step;
+    cout << "Maximum random passenger arrivals per time step: ";
+    cin >> max_arrivals_per_step;
+
+    if (max_arrivals_per_step < 0){
+        cout << "Invalid maximum arrivals.\n";
+        return;
+    }
+
+    try{
+        system.configure_gate(gate_capacity);
+    }
+    catch (const invalid_argument& e){
+        cout << "Configuration error: " << e.what() << '\n';
+        return;
+    }
+
+    cout << "\nTime | Queue size (after processing) | Total processed so far\n";
+    cout << "------------------------------------------------------------\n";
+
+    for (int t = 0; t < time_steps; t++){
+        try{
+            system.simulate_passenger_arrivals(t, max_arrivals_per_step);
+            system.process_passenger_gate(t);
+        }
+        catch (const invalid_argument& e){
+            cout << "Simulation error at t =" << t << ": " << e.what() << '\n';
+            return;
+        }
+
+        cout << "t = " << t << "   |" << system.get_gate_queue_size() << "\t| " << system.get_processed_passenger_count() << '\n';
+    }
+    cout << "\n--- Simulation Summary ---\n";
+    cout << "Total passengers processed: " << system.get_processed_passenger_count() << '\n';
+    cout << "Passengers still waiting in queue: " << system.get_gate_queue_size() << '\n';
+    cout << "Average waiting time: " << system.get_avg_passenger_waiting_time() << " time units\n";
 }

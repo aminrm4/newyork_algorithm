@@ -7,7 +7,8 @@ metro_system::metro_system()
       bfs(network), dfs(network), dijkstra(network),
       kruskal(network), prim(network),
       express_path(express_network),
-      bellman_ford(incentive_network)
+      bellman_ford(incentive_network),
+      passenger_sim(1)
 {
     network_data.build_network(network);
     build_express_network();
@@ -179,4 +180,28 @@ double metro_system::get_avg_daily_trips(){
 
 int metro_system::get_kth_busiest_station(int k){
     return analytics.kth_busiest_station(k);
+}
+
+void metro_system::configure_gate(int gate_capacity){
+    passenger_sim = passenger_simulator(gate_capacity);
+}
+
+void metro_system::simulate_passenger_arrivals(int current_time, int max_random_passengers){
+    passenger_sim.generate_random_passengers(max_random_passengers, current_time);
+}
+
+void metro_system::process_passenger_gate(int current_time){
+    passenger_sim.process_gate(current_time);
+}
+
+double metro_system::get_avg_passenger_waiting_time() const{
+    return passenger_sim.average_waiting_time();
+}
+
+int metro_system::get_gate_queue_size() const{
+    return passenger_sim.queue_size();
+}
+
+int metro_system::get_processed_passenger_count() const{
+    return passenger_sim.processed_count();
 }
