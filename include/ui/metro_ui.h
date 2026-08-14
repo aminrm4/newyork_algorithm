@@ -13,6 +13,7 @@ class metro_ui{
 
         // Round 2
         void show_cheapest_network();
+        void show_express_path();
     public:
         explicit metro_ui(metro_system& system_ref);
         void run();

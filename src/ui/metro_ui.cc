@@ -1,4 +1,5 @@
 #include "ui/metro_ui.h"
+#include "metro_ui.h"
 
 metro_ui::metro_ui(metro_system& system_ref): system(system_ref){}
 
@@ -11,6 +12,7 @@ void metro_ui::run(){
     cout << '\n';
     show_cheapest_network();
     cout << '\n';
+    show_express_path();
 }
 
 void metro_ui::show_network_info(){
@@ -144,5 +146,34 @@ void metro_ui::show_cheapest_network(){
     cout << "\nSelected edges (Kruskal):\n";
     for (auto& e : comparison.kruskal_result.edges){
         cout << "  " << system.get_station_name(e.from) << " -- " << system.get_station_name(e.to) << "  (" << e.weight << ")\n";
+    }
+}
+void metro_ui::show_express_path(){
+    cout << "--- T2.3: One-Way Express Line (DAG) ---\n";
+
+    int start_id, target_id;
+
+    cout << "Start station ID: ";
+    cin >> start_id;
+
+    cout << "Target station ID: ";
+    cin >> target_id;
+
+    try {
+        PathResult result = system.find_express_path(start_id,target_id);
+
+        if (!result.reach_able){
+            cout << "No path exists on the express line.\n";
+            return;
+        }
+
+        show_path(result);
+        cout << "Total time: " << result.total_cost << " minutes\n";
+    }
+    catch (const out_of_range&){
+        cerr << "Invalid station ID.\n" << "Valid IDs: 0 - " << system.get_station_count()-1 << '\n';
+    }
+    catch (const logic_error& e){
+        cerr << "Express line error: " << e.what() << '\n';
     }
 }

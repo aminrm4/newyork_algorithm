@@ -25,8 +25,8 @@ class metro_system {
         prim_algorithm prim;
         weighted_digraph express_network;
         dag_shortest_path_algorithm express_path;
-        weighted_digraph incentive_network;
-        bellman_ford_algorithm bellman_ford;
+
+        void build_express_network();
 
     public:
         metro_system();
@@ -40,4 +40,5 @@ class metro_system {
 
         // Round 2
         MSTComparisonResult compare_mst_algorithms(route_metric metric);
+        PathResult find_express_path(int start_id, int target_id);
 };
