@@ -19,6 +19,7 @@ class metro_ui{
 
         // Round 3
         void show_platform_scheduling();
+        void show_train_dispatch_queue();
     public:
         explicit metro_ui(metro_system& system_ref);
         void run();

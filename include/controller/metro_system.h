@@ -14,6 +14,7 @@
 
 #include "platform_scheduler.h"
 #include "train.h"
+#include "dispatch_queue.h"
 
 class metro_system {
     private:
@@ -33,6 +34,8 @@ class metro_system {
         bellman_ford_algorithm bellman_ford;
 
         platform_scheduler platform;
+        dispatch_queue train_dispatch_queue;
+
 
         void build_express_network();
         void build_incentive_network(bool create_negative_cycle = false);
@@ -56,4 +59,9 @@ class metro_system {
 
         // Round 3
         std::vector<train> schedule_trains(const std::vector<train>& trains);
+        void enqueue_train(const train& t);
+        train dispatch_next_train();
+        train peek_next_train() const;
+        bool dispatch_queue_empty() const;
+        size_t dispatch_queue_size() const;
 };

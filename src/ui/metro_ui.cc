@@ -18,6 +18,8 @@ void metro_ui::run(){
     // show_negative_cycle_test(); 
     cout << '\n';
     show_platform_scheduling();
+    cout << '\n';
+    show_train_dispatch_queue();
 }
 
 void metro_ui::show_network_info(){
@@ -274,4 +276,55 @@ void metro_ui::show_platform_scheduling(){
         cout << "Train " << t.get_id() << " [" << t.get_arrival_time() << ", " << t.get_departure_time() << "]\n";
     
     cout << "Maximum number of trains: " << selected_trains.size() << '\n';
+}
+
+void metro_ui::show_train_dispatch_queue(){
+    cout << "--- T3.2: Train Dispatch Priority Queue ---\n";
+
+    int train_count;
+
+    cout << "Number of trains to enqueue: ";
+    cin >> train_count;
+
+    if (train_count < 0){
+        cout << "Invalid number of trains.\n";
+        return;
+    }
+
+    for (int i = 0; i < train_count; i++){
+        int arrival, departure;
+
+        cout << "\nTrain " << i + 1 << ":\n";
+
+        cout << "Arrival time: "; cin >> arrival;
+        cout << "Departure time: "; cin >> departure;
+
+        if (arrival >= departure){
+            cout << "Invalid interval.\n";
+            return;
+        }
+
+        train t(i + 1, arrival, departure);
+        system.enqueue_train(t);
+    }
+
+    cout << "\nNumber of trains in queue: " << system.dispatch_queue_size() << '\n';
+
+    if (system.dispatch_queue_empty()){
+        cout << "Dispatch queue is empty.\n";
+        return;
+    }
+
+    cout << "\nHighest priority train:\n";
+
+    train next = system.peek_next_train();
+
+    cout << "Train " << next.get_id() << " [" << next.get_arrival_time() << ", " << next.get_departure_time() << "]\n";
+
+    cout << "\nDispatch order:\n";
+
+    while (!system.dispatch_queue_empty()){
+        train dispatched = system.dispatch_next_train();
+        cout << "Train " << dispatched.get_id() << " [" << dispatched.get_arrival_time() << ", " << dispatched.get_departure_time() << "]\n";
+    }
 }

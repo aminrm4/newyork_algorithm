@@ -141,3 +141,23 @@ BellmanFordResult metro_system::find_incentive_aware_path(int start_id, int targ
 std::vector<train> metro_system::schedule_trains(const std::vector<train>& trains){
     return platform.schedule(trains);
 }
+
+void metro_system::enqueue_train(const train& t){
+    train_dispatch_queue.enqueue_train(t);
+}
+
+train metro_system::dispatch_next_train(){
+    return train_dispatch_queue.dispatch_next();
+}
+
+train metro_system::peek_next_train() const{
+    return train_dispatch_queue.peek_next();
+}
+
+bool metro_system::dispatch_queue_empty() const{
+    return train_dispatch_queue.empty();
+}
+
+size_t metro_system::dispatch_queue_size() const{
+    return train_dispatch_queue.size();
+}
