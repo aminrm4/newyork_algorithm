@@ -8,6 +8,9 @@ void metro_ui::run(){
     show_accessibility();
     cout << '\n';
     show_shortest_path();
+    cout << '\n';
+    show_cheapest_network();
+    cout << '\n';
 }
 
 void metro_ui::show_network_info(){
@@ -103,4 +106,43 @@ void metro_ui::show_path(const PathResult& result){
             cout << " -> ";
     }
     cout << '\n';
+}
+
+void metro_ui::show_cheapest_network(){
+    cout << "--- T2.1: Minimum Cost Network (MST) ---\n";
+ 
+    int metric_choice;
+    cout << "Edge weight metric:\n1. Distance\n2. Time\nChoice: ";
+    cin >> metric_choice;
+ 
+    route_metric metric;
+    switch (metric_choice){
+        case 1:
+            metric = route_metric::DISTANCE;
+            break;
+        case 2:
+            metric = route_metric::TIME;
+            break;
+        default:
+            cout << "Invalid metric.\n";
+            return;
+    }
+
+    MSTComparisonResult comparison = system.compare_mst_algorithms(metric);
+ 
+    cout << "\n[Kruskal] Total cost: " << comparison.kruskal_result.total_weight
+         << " | Number of edges: " << comparison.kruskal_result.edges.size()
+         << " | Execution time: " << comparison.kruskal_time_ms << " ms\n";
+ 
+    cout << "[Prim]    Total cost: " << comparison.prim_result.total_weight
+         << " | Number of edges: " << comparison.prim_result.edges.size()
+         << " | Execution time: " << comparison.prim_time_ms << " ms\n";
+ 
+    if (!comparison.kruskal_result.is_spanning_tree || !comparison.prim_result.is_spanning_tree)
+        cout << "Note: The graph is not connected; a complete spanning tree could not be created.\n";
+ 
+    cout << "\nSelected edges (Kruskal):\n";
+    for (auto& e : comparison.kruskal_result.edges){
+        cout << "  " << system.get_station_name(e.from) << " -- " << system.get_station_name(e.to) << "  (" << e.weight << ")\n";
+    }
 }

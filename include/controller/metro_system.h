@@ -6,22 +6,38 @@
 #include "dfs_algorithm.h"
 #include "dijkstra_algorithm.h"
 
-class metro_system{
-private:
-    graph network;
-    qom_network_data network_data;
+#include "kruskal_algorithm.h"
+#include "prim_algorithm.h"
+#include "weighted_digraph.h"
+#include "dag_shortest_path.h"
+#include "bellman_ford_algorithm.h"
 
-    bfs_algorithm bfs;
-    dfs_algorithm dfs;
-    dijkstra_algorithm dijkstra;
+class metro_system {
+    private:
+        graph network;
+        qom_network_data network_data;
 
-public:
-    metro_system();
-    PathResult find_path(int start_id, int target_id);
+        bfs_algorithm bfs;
+        dfs_algorithm dfs;
+        dijkstra_algorithm dijkstra;
 
-    PathResult find_shortest_path(int start_id, int target_id, route_metric metric);
+        kruskal_algorithm kruskal;
+        prim_algorithm prim;
+        weighted_digraph express_network;
+        dag_shortest_path_algorithm express_path;
+        weighted_digraph incentive_network;
+        bellman_ford_algorithm bellman_ford;
 
-    int get_station_count();
-    int get_route_count();
-    std::string get_station_name(int station_id);
+    public:
+        metro_system();
+
+        // Round 1
+        PathResult find_path(int start_id, int target_id);
+        PathResult find_shortest_path(int start_id, int target_id, route_metric metric);
+        int get_station_count();
+        int get_route_count();
+        std::string get_station_name(int station_id);
+
+        // Round 2
+        MSTComparisonResult compare_mst_algorithms(route_metric metric);
 };
