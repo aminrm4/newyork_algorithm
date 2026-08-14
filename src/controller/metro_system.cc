@@ -6,10 +6,12 @@ metro_system::metro_system()
     : network(), network_data(),
       bfs(network), dfs(network), dijkstra(network),
       kruskal(network), prim(network),
-      express_path(express_network)
+      express_path(express_network),
+      bellman_ford(incentive_network)
 {
     network_data.build_network(network);
     build_express_network();
+    build_incentive_network(false);
 }
 
 PathResult metro_system::find_path(int start_id, int target_id){
@@ -79,4 +81,59 @@ void metro_system::build_express_network(){
 
 PathResult metro_system::find_express_path(int start_id, int target_id){
     return express_path.find_shortest_path(start_id, target_id);
+}
+
+void metro_system::build_incentive_network(bool create_negative_cycle){
+    int station_count = network.get_station_count();
+
+    incentive_network.resize(station_count);
+
+    for (int station_id = 0; station_id < station_count; station_id++){
+        for (auto& e : network.get_neighbors(station_id))
+            incentive_network.add_edge(station_id, e.get_destination(), e.get_time()); 
+    }
+
+    auto add_incentive =[this](const string& from_name, const string& to_name, double bonus){
+        int from = network.find_station_id(from_name);
+        int to = network.find_station_id(to_name);
+
+        if (from == -1 || to == -1)
+            return;
+
+        incentive_network.add_edge(from, to,-bonus);
+    };
+
+    add_incentive("niroogah", "sadeghiyeh", 1.0);
+    add_incentive("chehel_derakht", "aminabad", 1.0);
+
+    // Negative Cycle
+    if (create_negative_cycle){
+        int niroogah = network.find_station_id("niroogah");
+        int sadeghiyeh = network.find_station_id("sadeghiyeh");
+        int chehel_derakht = network.find_station_id("chehel_derakht");
+
+        if (niroogah != -1 && sadeghiyeh != -1 && chehel_derakht != -1){
+            incentive_network.add_edge( niroogah, sadeghiyeh, -10.0);
+            incentive_network.add_edge(sadeghiyeh, chehel_derakht, 1.0);
+            incentive_network.add_edge(chehel_derakht, niroogah, 1.0);
+        }
+    }
+}
+
+BellmanFordResult metro_system::demo_negative_cycle_detection(){
+    build_incentive_network(true);
+
+    int start_id = network.find_station_id("niroogah");
+
+    BellmanFordResult result;
+
+    if (start_id != -1)
+        result = bellman_ford.find_shortest_path(start_id, start_id);
+    
+
+    build_incentive_network(false);
+    return result;
+}
+BellmanFordResult metro_system::find_incentive_aware_path(int start_id, int target_id){
+    return bellman_ford.find_shortest_path(start_id, target_id);
 }

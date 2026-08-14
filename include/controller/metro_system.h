@@ -26,7 +26,11 @@ class metro_system {
         weighted_digraph express_network;
         dag_shortest_path_algorithm express_path;
 
+        weighted_digraph incentive_network;
+        bellman_ford_algorithm bellman_ford;
+
         void build_express_network();
+        void build_incentive_network(bool create_negative_cycle = false);
 
     public:
         metro_system();
@@ -41,4 +45,7 @@ class metro_system {
         // Round 2
         MSTComparisonResult compare_mst_algorithms(route_metric metric);
         PathResult find_express_path(int start_id, int target_id);
+        BellmanFordResult find_incentive_aware_path(int start_id, int target_id);
+        // test negative cycle
+        BellmanFordResult demo_negative_cycle_detection();
 };

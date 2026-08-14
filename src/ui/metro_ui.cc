@@ -1,4 +1,3 @@
-#include "ui/metro_ui.h"
 #include "metro_ui.h"
 
 metro_ui::metro_ui(metro_system& system_ref): system(system_ref){}
@@ -13,6 +12,10 @@ void metro_ui::run(){
     show_cheapest_network();
     cout << '\n';
     show_express_path();
+    cout << '\n';
+    show_incentive_aware_path();
+    cout << '\n';
+    // show_negative_cycle_test(); 
 }
 
 void metro_ui::show_network_info(){
@@ -176,4 +179,54 @@ void metro_ui::show_express_path(){
     catch (const logic_error& e){
         cerr << "Express line error: " << e.what() << '\n';
     }
+}
+
+void metro_ui::show_incentive_aware_path(){
+    cout << "--- T2.4: Incentive-Aware Path (Bellman-Ford) ---\n";
+
+    int start_id, target_id;
+
+    cout << "Start station ID: ";
+    cin >> start_id;
+
+    cout << "Target station ID: ";
+    cin >> target_id;
+
+    try{
+        BellmanFordResult result = system.find_incentive_aware_path(start_id, target_id );
+
+        if (result.negative_cycle_detected){
+            cout << "A negative cycle was detected in the network.\n";
+            return;
+        }
+        if (!result.reach_able){
+            cout << "No path exists between these stations.\n";
+            return;
+        }
+
+        cout << "Path: ";
+
+        for (size_t i = 0; i < result.path.size(); i++){
+            cout << system.get_station_name(result.path[i]);
+
+            if (i + 1 < result.path.size())
+                cout << " -> ";
+        }
+
+        cout << "\nFinal cost (including incentives): " << result.total_cost << '\n';
+    }
+    catch (const out_of_range&){
+        cerr << "Invalid station ID.\nValid IDs: 0 - "  << system.get_station_count()-1 << '\n';
+    }
+}
+
+void metro_ui::show_negative_cycle_test(){
+    cout << "--- Negative Cycle Test ---\n";
+
+    BellmanFordResult result = system.demo_negative_cycle_detection();
+
+    if (result.negative_cycle_detected)
+        cout << "Negative cycle detected successfully.\n";
+    else
+        cout << "Negative cycle was NOT detected.\n";
 }

@@ -14,6 +14,8 @@ class metro_ui{
         // Round 2
         void show_cheapest_network();
         void show_express_path();
+        void show_incentive_aware_path();
+        void show_negative_cycle_test();
     public:
         explicit metro_ui(metro_system& system_ref);
         void run();
