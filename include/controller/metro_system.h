@@ -12,6 +12,9 @@
 #include "dag_shortest_path.h"
 #include "bellman_ford_algorithm.h"
 
+#include "platform_scheduler.h"
+#include "train.h"
+
 class metro_system {
     private:
         graph network;
@@ -28,6 +31,8 @@ class metro_system {
 
         weighted_digraph incentive_network;
         bellman_ford_algorithm bellman_ford;
+
+        platform_scheduler platform;
 
         void build_express_network();
         void build_incentive_network(bool create_negative_cycle = false);
@@ -48,4 +53,7 @@ class metro_system {
         BellmanFordResult find_incentive_aware_path(int start_id, int target_id);
         // test negative cycle
         BellmanFordResult demo_negative_cycle_detection();
+
+        // Round 3
+        std::vector<train> schedule_trains(const std::vector<train>& trains);
 };

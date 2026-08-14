@@ -137,3 +137,7 @@ BellmanFordResult metro_system::demo_negative_cycle_detection(){
 BellmanFordResult metro_system::find_incentive_aware_path(int start_id, int target_id){
     return bellman_ford.find_shortest_path(start_id, target_id);
 }
+
+std::vector<train> metro_system::schedule_trains(const std::vector<train>& trains){
+    return platform.schedule(trains);
+}

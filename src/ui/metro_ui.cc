@@ -16,6 +16,8 @@ void metro_ui::run(){
     show_incentive_aware_path();
     cout << '\n';
     // show_negative_cycle_test(); 
+    cout << '\n';
+    show_platform_scheduling();
 }
 
 void metro_ui::show_network_info(){
@@ -229,4 +231,47 @@ void metro_ui::show_negative_cycle_test(){
         cout << "Negative cycle detected successfully.\n";
     else
         cout << "Negative cycle was NOT detected.\n";
+}
+
+void metro_ui::show_platform_scheduling(){
+    cout << "--- T3.1: Maximum Train Scheduling on Shared Platform ---\n";
+
+    int train_count;
+
+    cout << "Number of trains: ";
+    cin >> train_count;
+
+    if (train_count < 0){
+        cout << "Invalid number of trains.\n";
+        return;
+    }
+
+    vector<train> trains;
+
+    for (int i = 0; i < train_count; i++){
+        int arrival, departure;
+
+        cout << "\nTrain " << i + 1 << ":\n";
+        cout << "Arrival time: ";
+        cin >> arrival;
+
+        cout << "Departure time: ";
+        cin >> departure;
+
+        if (arrival >= departure){
+            cout << "Invalid interval: arrival time must be less than departure time.\n";
+            return;
+        }
+
+        trains.emplace_back(i+1, arrival, departure);
+    }
+
+    vector<train> selected_trains = system.schedule_trains(trains);
+
+    cout << "\nSelected trains:\n";
+
+    for (const auto& t : selected_trains)
+        cout << "Train " << t.get_id() << " [" << t.get_arrival_time() << ", " << t.get_departure_time() << "]\n";
+    
+    cout << "Maximum number of trains: " << selected_trains.size() << '\n';
 }
