@@ -20,6 +20,8 @@ void metro_ui::run(){
     show_platform_scheduling();
     cout << '\n';
     show_train_dispatch_queue();
+    cout << '\n';
+    show_network_analytics();
 }
 
 void metro_ui::show_network_info(){
@@ -326,5 +328,63 @@ void metro_ui::show_train_dispatch_queue(){
     while (!system.dispatch_queue_empty()){
         train dispatched = system.dispatch_next_train();
         cout << "Train " << dispatched.get_id() << " [" << dispatched.get_arrival_time() << ", " << dispatched.get_departure_time() << "]\n";
+    }
+}
+
+void metro_ui::show_network_analytics(){
+    cout << "--- T3.3: Network Operations Analytics ---\n";
+
+    int trip_count;
+
+    cout << "Number of trips to record: ";
+    cin >> trip_count;
+
+    if (trip_count < 0){
+        cout << "Invalid number of trips.\n";
+        return;
+    }
+
+    for (int i = 0; i < trip_count; i++){
+        int station_id;
+
+        cout << "Trip " << i+1 << " station ID: ";
+        cin >> station_id;
+
+        try{
+            system.record_trip(station_id);
+        }
+        catch (const out_of_range&){
+            cout << "Invalid station ID.\n";
+            i--;
+        }
+    }
+
+    int day_count;
+
+    cout << "\nNumber of days completed: ";
+    cin >> day_count;
+
+    if (day_count < 0){
+        cout << "Invalid number of days.\n";
+        return;
+    }
+
+    for (int i = 0; i < day_count; i++)
+        system.finish_day();
+    
+
+    cout << "\nAverage daily trips: " << system.get_avg_daily_trips() << '\n';
+
+    int k;
+    cout << "\nEnter k for kth busiest station: ";
+    cin >> k;
+
+    try{
+        int station_id = system.get_kth_busiest_station(k);
+
+        cout << k << "th busiest station: " << system.get_station_name(station_id) << " (ID: " << station_id << ")\n";
+    }
+    catch (const out_of_range&){
+        cout << "Invalid k.\n";
     }
 }

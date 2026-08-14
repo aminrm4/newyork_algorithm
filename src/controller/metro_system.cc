@@ -161,3 +161,22 @@ bool metro_system::dispatch_queue_empty() const{
 size_t metro_system::dispatch_queue_size() const{
     return train_dispatch_queue.size();
 }
+void metro_system::record_trip(int station_id){
+    if (!network.has_station(station_id))
+
+        throw std::out_of_range("invalid station_id");
+    
+    analytics.record_trip(station_id);
+}
+
+void metro_system::finish_day(){
+    analytics.finish_day();
+}
+
+double metro_system::get_avg_daily_trips(){
+    return analytics.average_daily_trips();
+}
+
+int metro_system::get_kth_busiest_station(int k){
+    return analytics.kth_busiest_station(k);
+}

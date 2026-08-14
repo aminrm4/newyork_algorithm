@@ -15,6 +15,7 @@
 #include "platform_scheduler.h"
 #include "train.h"
 #include "dispatch_queue.h"
+#include "network_analytics.h"
 
 class metro_system {
     private:
@@ -36,6 +37,7 @@ class metro_system {
         platform_scheduler platform;
         dispatch_queue train_dispatch_queue;
 
+        network_analytics analytics;
 
         void build_express_network();
         void build_incentive_network(bool create_negative_cycle = false);
@@ -64,4 +66,9 @@ class metro_system {
         train peek_next_train() const;
         bool dispatch_queue_empty() const;
         size_t dispatch_queue_size() const;
+        void record_trip(int station_id);
+        void finish_day();
+        double get_avg_daily_trips();
+        int get_kth_busiest_station(int);
+
 };
