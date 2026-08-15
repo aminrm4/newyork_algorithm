@@ -12,6 +12,7 @@ class max_flow_algorithm {
         max_flow_algorithm(interface_graph& graph_ref, double default_cap);
         max_flow_result find_max_flow(int source_id, int sink_id);
         void set_capacity(int from_id, int to_id, double capacity);
+        void initialize(double default_capacity);
     private:
         interface_graph& graph;
         vector<vector<double>> capacity_matrix;

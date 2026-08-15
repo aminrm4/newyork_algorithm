@@ -23,6 +23,9 @@ class metro_ui{
         void show_train_dispatch_queue();
         void show_network_analytics();
         void show_passenger_simulation();
+
+        // Round 4
+        void show_max_flow();
     public:
         explicit metro_ui(metro_system& system_ref);
         void run();

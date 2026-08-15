@@ -25,6 +25,8 @@ void metro_ui::run(){
     cout << '\n';
     show_passenger_simulation();
     show_a_star_path();
+    cout << '\n';
+    show_max_flow();
 }
 
 void metro_ui::show_network_info(){
@@ -499,4 +501,60 @@ void metro_ui::show_passenger_simulation(){
     cout << "Total passengers processed: " << system.get_processed_passenger_count() << '\n';
     cout << "Passengers still waiting in queue: " << system.get_gate_queue_size() << '\n';
     cout << "Average waiting time: " << system.get_avg_passenger_waiting_time() << " time units\n";
+}
+
+void metro_ui::show_max_flow(){
+    cout << "--- T4.2: Network Capacity During Peak Hours ---\n";
+
+    int source_id, target_id;
+
+    cout << "Source station ID: "; cin >> source_id;
+    cout << "Target station ID: "; cin >> target_id;
+
+    try{
+        int route_count;
+
+        cout << "Number of routes with custom capacity: ";
+        cin >> route_count;
+
+        if (route_count < 0){
+            cout << "Invalid route count.\n";
+            return;
+        }
+
+        for (int i = 0; i < route_count; ++i){
+            int from_id, to_id;
+            double capacity;
+
+            cout << "\nRoute " << i+1 << ":\n";
+            cout << "From station ID: "; cin >> from_id;
+            cout << "To station ID: "; cin >> to_id;
+
+            cout << "Capacity: "; cin >> capacity;
+
+            if (capacity < 0){
+                cout << "Capacity cannot be negative.\n";
+                return;
+            }
+
+            system.set_route_capacity(from_id, to_id, capacity);
+        }
+
+        max_flow_result result = system.find_max_passengers(source_id, target_id);
+
+        cout << "\nMaximum passengers transferable: " << result.total_flow << '\n';
+    }
+    catch (const out_of_range&)
+    {
+        cerr << "Invalid station ID.\n"
+             << "Valid IDs: 0 - "
+             << system.get_station_count() - 1
+             << '\n';
+    }
+    catch (const invalid_argument& e)
+    {
+        cerr << "Invalid input: "
+             << e.what()
+             << '\n';
+    }
 }

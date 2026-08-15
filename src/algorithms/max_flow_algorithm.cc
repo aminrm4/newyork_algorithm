@@ -5,15 +5,7 @@
 
 max_flow_algorithm::max_flow_algorithm(interface_graph& graph_ref, double default_capacity)
     : graph(graph_ref) {
-
-    int station_count = graph.get_station_count();
-
-    capacity_matrix.assign(station_count, vector<double>(station_count, 0.0));
-
-    residual_capacity.assign(station_count, vector<double>(station_count, 0.0));
-
-    build_capacity_matrix(default_capacity);
-    reset_residual_capacity();
+        initialize(default_capacity);
 }
 
 void max_flow_algorithm::build_capacity_matrix(double default_capacity){
@@ -99,4 +91,14 @@ max_flow_result max_flow_algorithm::find_max_flow(int source_id, int sink_id){
         total_flow += path_flow;
     }
     return {total_flow};
+}
+void max_flow_algorithm::initialize(double default_capacity){
+    int station_count = graph.get_station_count();
+
+    capacity_matrix.assign(station_count, vector<double>(station_count, 0.0));
+
+    residual_capacity.assign(station_count, vector<double>(station_count, 0.0) );
+
+    build_capacity_matrix(default_capacity);
+    reset_residual_capacity();
 }

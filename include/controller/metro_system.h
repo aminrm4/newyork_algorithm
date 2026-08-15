@@ -19,6 +19,8 @@
 #include "network_analytics.h"
 #include "passenger_simulator.h"
 
+#include "max_flow_algorithm.h"
+
 class metro_system
 {
 private:
@@ -42,6 +44,7 @@ private:
 
     network_analytics analytics;
     passenger_simulator passenger_sim;
+    max_flow_algorithm max_flow;
 
     void build_express_network();
     void build_incentive_network(bool create_negative_cycle = false);
@@ -49,6 +52,8 @@ private:
 public:
     metro_system();
     PathResult find_a_star_path(int start_id, int target_id, route_metric metric);
+        void build_express_network();
+        void build_incentive_network(bool create_negative_cycle = false);
 
     // Round 1
     PathResult find_path(int start_id, int target_id);
@@ -83,4 +88,8 @@ public:
     double get_avg_passenger_waiting_time() const;
     int get_gate_queue_size() const;
     int get_processed_passenger_count() const;
+
+    // Round 4
+    max_flow_result find_max_passengers(int source_id, int target_id);
+    void set_route_capacity(int from_id, int to_id, double capacity);
 };
