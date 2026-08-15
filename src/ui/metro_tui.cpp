@@ -1,9 +1,106 @@
 #include "metro_tui.h"
-
+#include <bits/stdc++.h>
 #include <sstream>
 #include <limits>
 #include <stdexcept>
+#include <ftxui/screen/box.hpp>
+namespace
+{
+    class horizontal_drag_scroll_base : public ftxui::ComponentBase
+    {
+    public:
+        explicit horizontal_drag_scroll_base(ftxui::Component child)
+        {
+            Add(std::move(child));
+        }
 
+        ftxui::Element Render() override
+        {
+            return ChildAt(0)->Render() | ftxui::focusPositionRelative(scroll_ratio_, 0.f) | ftxui::xframe | ftxui::reflect(box_);
+        }
+
+        bool OnEvent(ftxui::Event event) override
+        {
+            if (!event.is_mouse())
+                return ftxui::ComponentBase::OnEvent(event);
+
+            return OnMouseEvent(event);
+        }
+
+    private:
+        bool OnMouseEvent(ftxui::Event event)
+        {
+            ftxui::Mouse mouse = event.mouse();
+
+            bool handled_by_child = ftxui::ComponentBase::OnEvent(event);
+
+            if (mouse.motion == ftxui::Mouse::Released)
+            {
+                dragging_ = false;
+                return handled_by_child;
+            }
+
+            if (handled_by_child)
+                return true;
+
+            if (mouse.button != ftxui::Mouse::Left || mouse.motion != ftxui::Mouse::Pressed)
+                return false;
+
+            if (!box_.Contain(mouse.x, mouse.y))
+                return false;
+
+            if (!dragging_)
+            {
+                dragging_ = true;
+                drag_start_x_ = mouse.x;
+                drag_start_ratio_ = scroll_ratio_;
+                return true;
+            }
+
+            int width = std::max(1, box_.x_max - box_.x_min);
+            int delta = mouse.x - drag_start_x_;
+            scroll_ratio_ = drag_start_ratio_ - static_cast<double>(delta) / static_cast<double>(width);
+            scroll_ratio_ = std::max(0.0, std::min(1.0, scroll_ratio_));
+            return true;
+        }
+
+        ftxui::Box box_;
+        double scroll_ratio_ = 0.0;
+        bool dragging_ = false;
+        int drag_start_x_ = 0;
+        double drag_start_ratio_ = 0.0;
+    };
+
+    ftxui::Component horizontal_drag_scroll(ftxui::Component child)
+    {
+        return ftxui::Make<horizontal_drag_scroll_base>(std::move(child));
+    }
+    ftxui::Element render_multiline(const std::string &content)
+    {
+        std::vector<std::string> lines;
+        std::string current;
+
+        for (char c : content)
+        {
+            if (c == '\n')
+            {
+                lines.push_back(current);
+                current.clear();
+            }
+            else
+            {
+                current.push_back(c);
+            }
+        }
+        lines.push_back(current);
+
+        ftxui::Elements rendered_lines;
+        for (const auto &line : lines)
+            rendered_lines.push_back(ftxui::text(line));
+
+        return ftxui::vbox(std::move(rendered_lines));
+    }
+}
 using namespace ftxui;
 const Color title_color = Color::Cyan;
 const Color section_color = Color::Yellow;
@@ -11,9 +108,9 @@ const Color action_color = Color::Green;
 const Color back_color = Color::Red;
 const Color input_color = Color::White;
 const Color result_color = Color::White;
-const Color info_color = Color::GrayLight; 
+const Color info_color = Color::GrayLight;
 
-metro_tui::metro_tui(metro_system& system_ref)
+metro_tui::metro_tui(metro_system &system_ref)
     : system(system_ref),
       screen(ScreenInteractive::Fullscreen()),
       selected_tab(0),
@@ -71,7 +168,7 @@ metro_tui::metro_tui(metro_system& system_ref)
     refresh_network_info();
 }
 
-bool metro_tui::try_parse_int(const std::string& text, int& out)
+bool metro_tui::try_parse_int(const std::string &text, int &out)
 {
     try
     {
@@ -79,13 +176,13 @@ bool metro_tui::try_parse_int(const std::string& text, int& out)
         out = std::stoi(text, &pos);
         return pos == text.size();
     }
-    catch (const std::exception&)
+    catch (const std::exception &)
     {
         return false;
     }
 }
 
-bool metro_tui::try_parse_double(const std::string& text, double& out)
+bool metro_tui::try_parse_double(const std::string &text, double &out)
 {
     try
     {
@@ -93,7 +190,7 @@ bool metro_tui::try_parse_double(const std::string& text, double& out)
         out = std::stod(text, &pos);
         return pos == text.size();
     }
-    catch (const std::exception&)
+    catch (const std::exception &)
     {
         return false;
     }
@@ -109,7 +206,7 @@ void metro_tui::go_back()
     selected_tab = 0;
 }
 
-Component metro_tui::labeled_input(
+ftxui::Component metro_tui::labeled_input(
     const std::string& label,
     std::string* content,
     const std::string& placeholder)
@@ -119,60 +216,42 @@ Component metro_tui::labeled_input(
     return Renderer(input, [label, input]
     {
         return hbox({
-            text(label) | size(WIDTH, EQUAL, 22),
+            text(label) | size(WIDTH, GREATER_THAN, 22),
+            text(" "),
             input->Render() | flex,
         });
     });
 }
-
 Component metro_tui::wrap_screen(
-    const std::string& title,
+    const std::string &title,
     Component body,
-    std::string* result_text)
+    std::string *result_text)
 {
     auto back_button =
-        Button("Back to menu", [this] { go_back(); });
+        Button("Back to menu", [this]
+               { go_back(); });
 
     auto layout =
         Container::Vertical({body, back_button});
 
-    return Renderer(
+    auto screen_renderer = Renderer(
         layout,
         [title, body, back_button, result_text]
         {
-          return vbox({
-    text(title)
-        | bold
-        | color(title_color)
-        | center,
-
-    separator(),
-
-    body->Render(),
-
-    separator(),
-
-    text("Result:")
-        | bold
-        | color(section_color),
-
-    paragraph(*result_text)
-        | color(result_color)
-        | border,
-
-    separator(),
-
-    back_button->Render()
-        | color(back_color),
-})
-            // If the screen's content is taller than the terminal
-            // (e.g. many stations, many generated rows), scroll
-            // instead of silently clipping off buttons at the bottom.
-            | vscroll_indicator
-            | frame
-            | flex
-            | border;
+            return vbox({
+                       text(title) | bold | center,
+                       separator(),
+                       body->Render(),
+                       separator(),
+                       text("Result:") | bold,
+                       render_multiline(*result_text) | border,
+                       separator(),
+                       back_button->Render(),
+                   }) |
+                   border;
         });
+
+    return horizontal_drag_scroll(screen_renderer);
 }
 
 Component metro_tui::build_main_menu_screen()
@@ -187,20 +266,18 @@ Component metro_tui::build_main_menu_screen()
     auto menu =
         Menu(&menu_entries, &menu_selected, menu_option);
 
-    return Renderer(menu, [this, menu]
-    {
-        return vbox({
-            text(" welcome to Qom / New York Metro Routing System")
-                | bold
-                | center,
-            separator(),
-            text("Select a feature and press Enter:"),
-            separator(),
-            menu->Render() | frame,
-        }) | border;
-    });
-}
+    auto screen_renderer = Renderer(menu, [this, menu]
+                                    { return vbox({
+                                                 text("Qom / New York Metro Routing System") | bold | center,
+                                                 separator(),
+                                                 text("Select a feature and press Enter:"),
+                                                 separator(),
+                                                 menu->Render() | frame,
+                                             }) |
+                                             border; });
 
+    return horizontal_drag_scroll(screen_renderer);
+}
 void metro_tui::refresh_network_info()
 {
     std::ostringstream out;
@@ -244,8 +321,8 @@ int metro_tui::get_station_id(int selected_index) const
 }
 
 Component metro_tui::create_station_menu(
-    const std::string& label,
-    int* selected_index)
+    const std::string &label,
+    int *selected_index)
 {
     auto menu =
         Menu(
@@ -256,14 +333,8 @@ Component metro_tui::create_station_menu(
         menu,
         [label, menu]
         {
-            return vbox({
-                text(label) | bold,
-                menu->Render()
-                    | vscroll_indicator
-                    | frame
-                    | size(HEIGHT, LESS_THAN, 8)
-                    | border
-            });
+            return vbox({text(label) | bold,
+                         menu->Render() | vscroll_indicator | frame | size(HEIGHT, LESS_THAN, 8) | border});
         });
 }
 
@@ -313,7 +384,7 @@ void metro_tui::run_accessibility()
         accessibility_result =
             out.str();
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         accessibility_result =
             std::string("Error: ") + e.what();
@@ -341,11 +412,9 @@ Component metro_tui::build_accessibility_screen()
             });
 
     auto body =
-        Container::Vertical({
-            start_menu,
-            target_menu,
-            run_button
-        });
+        Container::Vertical({start_menu,
+                             target_menu,
+                             run_button});
 
     return wrap_screen(
         "Accessibility (BFS)",
@@ -407,7 +476,7 @@ void metro_tui::run_shortest_path()
         shortest_result =
             out.str();
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         shortest_result =
             std::string("Error: ") + e.what();
@@ -440,12 +509,10 @@ Component metro_tui::build_shortest_path_screen()
             });
 
     auto body =
-        Container::Vertical({
-            start_menu,
-            target_menu,
-            metric_selector,
-            run_button
-        });
+        Container::Vertical({start_menu,
+                             target_menu,
+                             metric_selector,
+                             run_button});
 
     return wrap_screen(
         "Shortest Path (Dijkstra) ",
@@ -523,7 +590,7 @@ void metro_tui::run_a_star_comparison()
         astar_result =
             out.str();
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         astar_result =
             std::string("Error: ") + e.what();
@@ -556,12 +623,10 @@ Component metro_tui::build_a_star_screen()
             });
 
     auto body =
-        Container::Vertical({
-            start_menu,
-            target_menu,
-            metric_selector,
-            run_button
-        });
+        Container::Vertical({start_menu,
+                             target_menu,
+                             metric_selector,
+                             run_button});
 
     return wrap_screen(
         "A* vs Dijkstra ",
@@ -605,7 +670,7 @@ void metro_tui::run_mst_comparison()
 
     out << "\n Selected edges (Kruskal): \n";
 
-    for (auto& e :
+    for (auto &e :
          comparison.kruskal_result.edges)
     {
         out << "  "
@@ -637,10 +702,8 @@ Component metro_tui::build_mst_screen()
             });
 
     auto body =
-        Container::Vertical({
-            metric_selector,
-            run_button
-        });
+        Container::Vertical({metric_selector,
+                             run_button});
 
     return wrap_screen(
         " Minimum Cost Network (MST) ",
@@ -700,13 +763,13 @@ void metro_tui::run_express_path()
         express_result =
             out.str();
     }
-    catch (const std::logic_error& e)
+    catch (const std::logic_error &e)
     {
         express_result =
             std::string("Express line error: ") +
             e.what();
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         express_result =
             std::string("Error: ") + e.what();
@@ -734,11 +797,9 @@ Component metro_tui::build_express_path_screen()
             });
 
     auto body =
-        Container::Vertical({
-            start_menu,
-            target_menu,
-            run_button
-        });
+        Container::Vertical({start_menu,
+                             target_menu,
+                             run_button});
 
     return wrap_screen(
         " Express Path (DAG) ",
@@ -806,7 +867,7 @@ void metro_tui::run_incentive_path()
         incentive_result =
             out.str();
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         incentive_result =
             std::string("Error: ") + e.what();
@@ -834,11 +895,9 @@ Component metro_tui::build_incentive_path_screen()
             });
 
     auto body =
-        Container::Vertical({
-            start_menu,
-            target_menu,
-            run_button
-        });
+        Container::Vertical({start_menu,
+                             target_menu,
+                             run_button});
 
     return wrap_screen(
         " Incentive-Aware Path (Bellman-Ford) ",
@@ -878,24 +937,22 @@ void metro_tui::regenerate_platform_rows()
         auto arrival_input =
             labeled_input(
                 " Train " +
-                std::to_string(i + 1) +
-                " arrival :",
+                    std::to_string(i + 1) +
+                    " arrival :",
                 &platform_arrivals[i],
                 " time ");
 
         auto departure_input =
             labeled_input(
                 " Train " +
-                std::to_string(i + 1) +
-                " departure: ",
+                    std::to_string(i + 1) +
+                    " departure: ",
                 &platform_departures[i],
                 " time ");
 
         auto row =
-            Container::Horizontal({
-                arrival_input,
-                departure_input
-            });
+            Container::Horizontal({arrival_input,
+                                   departure_input});
 
         platform_rows_container
             ->Add(row);
@@ -952,7 +1009,7 @@ void metro_tui::run_platform_scheduling()
 
     out << " Selected trains: \n";
 
-    for (const auto& t :
+    for (const auto &t :
          selected_trains)
     {
         out << " Train "
@@ -996,12 +1053,10 @@ Component metro_tui::build_platform_scheduling_screen()
             });
 
     auto body =
-        Container::Vertical({
-            count_input,
-            generate_button,
-            platform_rows_container,
-            run_button
-        });
+        Container::Vertical({count_input,
+                             generate_button,
+                             platform_rows_container,
+                             run_button});
 
     return wrap_screen(
         " Platform Scheduling (Max Trains) ",
@@ -1041,24 +1096,22 @@ void metro_tui::regenerate_dispatch_rows()
         auto arrival_input =
             labeled_input(
                 " Train " +
-                std::to_string(i + 1) +
-                " arrival: ",
+                    std::to_string(i + 1) +
+                    " arrival: ",
                 &dispatch_arrivals[i],
                 " time ");
 
         auto departure_input =
             labeled_input(
                 " Train " +
-                std::to_string(i + 1) +
-                " departure: ",
+                    std::to_string(i + 1) +
+                    " departure: ",
                 &dispatch_departures[i],
                 " time ");
 
         auto row =
-            Container::Horizontal({
-                arrival_input,
-                departure_input
-            });
+            Container::Horizontal({arrival_input,
+                                   departure_input});
 
         dispatch_rows_container
             ->Add(row);
@@ -1178,12 +1231,10 @@ Component metro_tui::build_dispatch_queue_screen()
             });
 
     auto body =
-        Container::Vertical({
-            count_input,
-            generate_button,
-            dispatch_rows_container,
-            run_button
-        });
+        Container::Vertical({count_input,
+                             generate_button,
+                             dispatch_rows_container,
+                             run_button});
 
     return wrap_screen(
         " Train Dispatch Priority Queue ",
@@ -1219,8 +1270,8 @@ void metro_tui::regenerate_analytics_rows()
         auto trip_input =
             labeled_input(
                 " Trip " +
-                std::to_string(i + 1) +
-                "  station: ",
+                    std::to_string(i + 1) +
+                    "  station: ",
                 &analytics_trip_ids[i],
                 " station ID ");
 
@@ -1255,7 +1306,7 @@ void metro_tui::run_network_analytics()
         {
             system.record_trip(station_id);
         }
-        catch (const std::out_of_range&)
+        catch (const std::out_of_range &)
         {
             analytics_result =
                 "Invalid station ID in trip " +
@@ -1314,7 +1365,7 @@ void metro_tui::run_network_analytics()
             << station_id
             << ")";
     }
-    catch (const std::out_of_range&)
+    catch (const std::out_of_range &)
     {
         out << "Invalid k.";
     }
@@ -1327,7 +1378,7 @@ Component metro_tui::build_network_analytics_screen()
 {
     auto trip_count_input =
         labeled_input(
-            " Number of trips: " ,
+            " Number of trips: ",
             &analytics_trip_count_input,
             " count ");
 
@@ -1416,7 +1467,7 @@ void metro_tui::run_passenger_simulation()
         system.configure_gate(
             gate_capacity);
     }
-    catch (const std::invalid_argument& e)
+    catch (const std::invalid_argument &e)
     {
         passenger_result =
             std::string(
@@ -1444,7 +1495,7 @@ void metro_tui::run_passenger_simulation()
 
             system.process_passenger_gate(t);
         }
-        catch (const std::invalid_argument& e)
+        catch (const std::invalid_argument &e)
         {
             out << "Simulation error at t = "
                 << t
@@ -1490,7 +1541,7 @@ Component metro_tui::build_passenger_simulation_screen()
         labeled_input(
             " Gate capacity per step: ",
             &passenger_capacity_input,
-            " capacity " );
+            " capacity ");
 
     auto steps_input =
         labeled_input(
@@ -1513,12 +1564,10 @@ Component metro_tui::build_passenger_simulation_screen()
             });
 
     auto body =
-        Container::Vertical({
-            capacity_input,
-            steps_input,
-            max_arrivals_input,
-            run_button
-        });
+        Container::Vertical({capacity_input,
+                             steps_input,
+                             max_arrivals_input,
+                             run_button});
 
     return wrap_screen(
         " Passenger Arrival Simulation ",
@@ -1572,15 +1621,14 @@ void metro_tui::run_floyd_warshall()
             << ": "
             << shortest_path;
 
-        out <<
-            (metric == route_metric::DISTANCE
-                ? " distance units"
-                : " minutes");
+        out << (metric == route_metric::DISTANCE
+                    ? " distance units"
+                    : " minutes");
 
         floyd_result =
             out.str();
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         floyd_result =
             std::string("Error: ") + e.what();
@@ -1613,12 +1661,10 @@ Component metro_tui::build_floyd_warshall_screen()
             });
 
     auto body =
-        Container::Vertical({
-            start_menu,
-            target_menu,
-            metric_selector,
-            run_button
-        });
+        Container::Vertical({start_menu,
+                             target_menu,
+                             metric_selector,
+                             run_button});
 
     return wrap_screen(
         " All-Pairs Shortest Path (Floyd-Warshall) ",
@@ -1662,31 +1708,29 @@ void metro_tui::regenerate_flow_rows()
         auto from_menu =
             create_station_menu(
                 "Route " +
-                std::to_string(i + 1) +
-                " from: ",
+                    std::to_string(i + 1) +
+                    " from: ",
                 &flow_from_indices[i]);
 
         auto to_menu =
             create_station_menu(
                 "Route " +
-                std::to_string(i + 1) +
-                " to: ",
+                    std::to_string(i + 1) +
+                    " to: ",
                 &flow_to_indices[i]);
 
         auto capacity_input =
             labeled_input(
                 "Route " +
-                std::to_string(i + 1) +
-                " capacity: ",
+                    std::to_string(i + 1) +
+                    " capacity: ",
                 &flow_capacities[i],
                 "capacity ");
 
         auto row =
-            Container::Vertical({
-                from_menu,
-                to_menu,
-                capacity_input
-            });
+            Container::Vertical({from_menu,
+                                 to_menu,
+                                 capacity_input});
 
         flow_rows_container
             ->Add(row);
@@ -1767,12 +1811,12 @@ void metro_tui::run_max_flow()
             std::to_string(
                 result.total_flow);
     }
-    catch (const std::out_of_range&)
+    catch (const std::out_of_range &)
     {
         flow_result =
             "Invalid station selection.";
     }
-    catch (const std::invalid_argument& e)
+    catch (const std::invalid_argument &e)
     {
         flow_result =
             std::string("Invalid input: ") +
@@ -1796,7 +1840,7 @@ Component metro_tui::build_max_flow_screen()
         labeled_input(
             " Number of custom routes: ",
             &flow_route_count_input,
-            "count " );
+            "count ");
 
     auto generate_button =
         Button(
@@ -1864,7 +1908,7 @@ void metro_tui::run_critical_stations()
     }
     else
     {
-        for (const auto& bridge :
+        for (const auto &bridge :
              result.bridges)
         {
             out << "  "
@@ -1958,7 +2002,7 @@ void metro_tui::run_station_search()
         search_result =
             out.str();
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         search_result =
             std::string("Search failed: ") +
@@ -1983,10 +2027,8 @@ Component metro_tui::build_station_search_screen()
             });
 
     auto body =
-        Container::Vertical({
-            query_input,
-            run_button
-        });
+        Container::Vertical({query_input,
+                             run_button});
 
     return wrap_screen(
         "Station Search with Typo Tolerance",
