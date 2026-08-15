@@ -59,7 +59,6 @@ private:
 
 public:
     metro_system();
-    PathResult find_a_star_path(int start_id, int target_id, route_metric metric);
     void build_express_network();
 
     // Round 1
@@ -105,4 +104,8 @@ public:
     articulation_result find_critical_stations();
     vector<int> find_emergency_team_stations();
     station find_closest_station(const std::string& name);
+
+    // Round 5 
+    PathResult find_a_star_path(int start_id, int target_id, route_metric metric);
+
 };

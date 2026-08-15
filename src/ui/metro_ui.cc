@@ -34,6 +34,7 @@ void metro_ui::run(){
     show_emergency_team_placement();
     cout << '\n';
     show_station_search();
+    cout << '\n';
     show_a_star_path();
 }
 
