@@ -28,6 +28,8 @@ void metro_ui::run(){
     show_all_pairs_shortest_path();
     cout << '\n';
     show_max_flow();
+    cout << '\n';
+    show_critical_stations();
 
 
 
@@ -557,75 +559,78 @@ void metro_ui::show_max_flow(){
     }
 }
 
-void metro_ui::show_all_pairs_shortest_path()
-{
+void metro_ui::show_all_pairs_shortest_path(){
     cout << "--- T4.1: All-Pairs Shortest Paths (Floyd-Warshall) ---\n";
 
-    int start_id;
-    int target_id;
-    int metric_choice;
+    int start_id, target_id, metric_choice;
 
-    cout << "Start station ID: ";
-    cin >> start_id;
-
-    cout << "Target station ID: ";
-    cin >> target_id;
+    cout << "Start station ID: "; cin >> start_id;
+    cout << "Target station ID: "; cin >> target_id;
 
     cout << "Metric:\n";
-    cout << "1. Distance\n";
-    cout << "2. Time\n";
-    cout << "Choice: ";
+    cout << "1. Distance\n2. Time\n Choice: ";
     cin >> metric_choice;
 
     route_metric metric;
 
     if (metric_choice == 1)
-    {
         metric = route_metric::DISTANCE;
-    }
+    
     else if (metric_choice == 2)
-    {
         metric = route_metric::TIME;
-    }
-    else
-    {
+    else{
         cout << "Invalid metric.\n";
         return;
     }
 
-    try
-    {
-        double shortest_path =
-            system.get_all_pairs_shortest_path(
-                start_id,
-                target_id,
-                metric
-            );
+    try{
+        double shortest_path = system.get_all_pairs_shortest_path(start_id, target_id, metric);
 
-        if (shortest_path ==
-            numeric_limits<double>::infinity())
-        {
+        if (shortest_path == numeric_limits<double>::infinity()){
             cout << "No path exists between these stations.\n";
             return;
         }
 
         cout << "Shortest path from "
-             << system.get_station_name(start_id)
-             << " to "
+             << system.get_station_name(start_id) << " to "
              << system.get_station_name(target_id)
-             << ": "
-             << shortest_path;
+             << ": " << shortest_path;
 
         if (metric == route_metric::DISTANCE)
             cout << " distance units\n";
         else
             cout << " minutes\n";
     }
-    catch (const out_of_range&)
-    {
+    catch (const out_of_range&){
         cerr << "Invalid station ID.\n"
              << "Valid IDs: 0 - "
-             << system.get_station_count() - 1
-             << '\n';
+             << system.get_station_count()-1 << '\n';
+    }
+}
+
+void metro_ui::show_critical_stations(){
+    cout << "--- T4.3: Critical Stations and Bridges ---\n";
+
+    articulation_result result = system.find_critical_stations();
+
+    cout << "\nArticulation Points:\n";
+
+    if (result.articulation_points.empty())
+        cout << "None\n";
+    
+    else{
+        for (int station_id : result.articulation_points)
+            cout << "  " << system.get_station_name(station_id) << 
+            " (ID: " << station_id << ")\n";
+    }
+
+    cout << "\nBridges:\n";
+
+    if (result.bridges.empty())
+        cout << "None\n";
+    else {
+        for (const auto& bridge : result.bridges)
+            cout << "  " << system.get_station_name(bridge.first)
+                 << " -- " << system.get_station_name(bridge.second) << '\n';
     }
 }

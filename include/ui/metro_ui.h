@@ -27,6 +27,7 @@ class metro_ui{
         // Round 4
         void show_all_pairs_shortest_path();
         void show_max_flow();
+        void show_critical_stations();
     public:
         explicit metro_ui(metro_system& system_ref);
         void run();

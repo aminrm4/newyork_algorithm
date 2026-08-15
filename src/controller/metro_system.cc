@@ -10,6 +10,7 @@ metro_system::metro_system()
       express_path(express_network),
       bellman_ford(incentive_network),
       passenger_sim(1), max_flow(network, 0.0) , floyd_warshall(network)
+      , articulation_finder(network)
 {
     network_data.build_network(network);
     build_express_network();
@@ -254,32 +255,21 @@ max_flow_result metro_system::find_max_passengers(int source_id, int target_id){
     return max_flow.find_max_flow(source_id, target_id);
 }
 
-double metro_system::get_all_pairs_shortest_path(
-    int start_id,
-    int target_id, route_metric metric)
-{
-    if (start_id < 0 ||
-        start_id >= network.get_station_count() ||
-        target_id < 0 ||
-        target_id >= network.get_station_count())
-    {
+double metro_system::get_all_pairs_shortest_path(int start_id, int target_id, route_metric metric){
+    if (start_id < 0 || start_id >= network.get_station_count() || 
+        target_id < 0 || target_id >= network.get_station_count()){
         throw out_of_range("invalid station_id");
     }
 
-    return floyd_warshall.get_shortest_path(
-        start_id,
-        target_id,
-        metric
-    );
+    return floyd_warshall.get_shortest_path(start_id, target_id, metric );
 }
-const vector<vector<double>>&
-metro_system::get_distance_matrix() const
-{
+const vector<vector<double>>& metro_system::get_distance_matrix() const{
     return floyd_warshall.get_distance_matrix();
 }
 
-const vector<vector<double>>&
-metro_system::get_time_matrix() const
-{
+const vector<vector<double>>& metro_system::get_time_matrix() const{
     return floyd_warshall.get_time_matrix();
+}
+articulation_result metro_system::find_critical_stations(){
+    return articulation_finder.find();
 }

@@ -21,6 +21,7 @@
 
 #include "max_flow_algorithm.h"
 #include "floyd_warshall_algorithm.h"
+#include "articulation_points_finder.h"
 
 class metro_system
 {
@@ -48,6 +49,7 @@ private:
     max_flow_algorithm max_flow;
 
     floyd_warshall_algorithm floyd_warshall;
+    articulation_points_finder articulation_finder;
 
     void build_incentive_network(bool create_negative_cycle = false);
 
@@ -96,4 +98,6 @@ public:
     const vector<vector<double>>& get_time_matrix() const;
     max_flow_result find_max_passengers(int source_id, int target_id);
     void set_route_capacity(int from_id, int to_id, double capacity);
+    articulation_result find_critical_stations();
+
 };
