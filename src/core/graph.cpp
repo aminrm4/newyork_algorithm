@@ -22,6 +22,22 @@ int graph::add_station(const string &station_name)
     return new_id;
 }
 
+int graph::add_station(const string &station_name, double latitude, double longitude)
+{
+    auto existing = name_to_id.find(station_name);
+    if (existing != name_to_id.end())
+    {
+        return existing->second;
+    }
+
+    int new_id = static_cast<int>(stations.size());
+    stations.emplace_back(new_id, station_name, latitude, longitude);
+    adjacency_list.emplace_back();
+    name_to_id[station_name] = new_id;
+
+    return new_id;
+}
+
 void graph::add_route(int from_id, int to_id, double distance_km, double time_min)
 {
     validate_station_id(from_id);

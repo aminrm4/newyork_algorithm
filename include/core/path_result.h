@@ -8,8 +8,9 @@ struct PathResult
     bool reach_able;
     vector<int> path;
     double total_cost;
+    int expanded_nodes;
 
-    PathResult() : reach_able(false), path(), total_cost(0.0)
+    PathResult() : reach_able(false), path(), total_cost(0.0), expanded_nodes(0)
     {
     }
 };

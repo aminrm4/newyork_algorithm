@@ -9,6 +9,7 @@ class metro_ui{
         void show_network_info();
         void show_accessibility();
         void show_shortest_path();
+        void show_a_star_path();
         void show_path(const PathResult& result);
 
         // Round 2

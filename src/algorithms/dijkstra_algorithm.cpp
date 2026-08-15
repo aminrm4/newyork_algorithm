@@ -54,6 +54,7 @@ PathResult dijkstra_algorithm::find_shortest_path(int start_id,int target_id,rou
         }
 
         finalized[current_id] = true;
+        result.expanded_nodes++;
 
         if (current_id == target_id)
         {

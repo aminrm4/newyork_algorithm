@@ -24,6 +24,7 @@ void metro_ui::run(){
     show_network_analytics();
     cout << '\n';
     show_passenger_simulation();
+    show_a_star_path();
 }
 
 void metro_ui::show_network_info(){
@@ -102,6 +103,56 @@ void metro_ui::show_shortest_path(){
 
         show_path(result);
         cout << "Total cost: " << result.total_cost << '\n';
+    }
+    catch (const exception&){
+        cerr << "Invalid station ID.\nValid IDs: 0 - " << system.get_station_count()-1 << '\n';
+    }
+}
+
+void metro_ui::show_a_star_path(){
+    cout << "--- A* vs Dijkstra ---\n";
+
+    int start_id;
+    int target_id;
+    int metric_choice;
+
+    cout << "Start station ID: ";
+    cin >> start_id;
+
+    cout << "Target station ID: ";
+    cin >> target_id;
+
+    cout << "Metric:\n";
+    cout << "1. Distance\n";
+    cout << "2. Time\n";
+    cout << "Choice: ";
+    cin >> metric_choice;
+
+    route_metric metric;
+
+    if (metric_choice == 1)
+        metric = route_metric::DISTANCE;
+    else if (metric_choice == 2)
+        metric = route_metric::TIME;
+    else{
+        cout << "Invalid metric.\n";
+        return;
+    }
+
+    try{
+        PathResult dijkstra_result = system.find_shortest_path(start_id, target_id, metric);
+        PathResult a_star_result = system.find_a_star_path(start_id, target_id, metric);
+
+        if (!a_star_result.reach_able){
+            cout << "No path exists.\n";
+            return;
+        }
+
+        cout << "A* path: ";
+        show_path(a_star_result);
+        cout << "A* total cost: " << a_star_result.total_cost << '\n';
+        cout << "A* expanded nodes: " << a_star_result.expanded_nodes << '\n';
+        cout << "Dijkstra expanded nodes: " << dijkstra_result.expanded_nodes << '\n';
     }
     catch (const exception&){
         cerr << "Invalid station ID.\nValid IDs: 0 - " << system.get_station_count()-1 << '\n';

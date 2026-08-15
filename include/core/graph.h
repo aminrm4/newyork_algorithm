@@ -12,6 +12,7 @@ public:
     graph();
 
     int add_station(const string &station_name) override;
+    int add_station(const string &station_name, double latitude, double longitude);
     void add_route(int from_id, int to_id, double distance_km, double time_min) override;
 
     int get_station_count() override;
