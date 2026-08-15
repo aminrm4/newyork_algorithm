@@ -36,12 +36,16 @@ void floyd_warshall_algorithm::initialize_matrices()
         for (edge &e : neighbors)
         {
             int destination = e.get_destination();
+
             if (e.get_distance() < distance_matrix[i][destination])
             {
                 distance_matrix[i][destination] = e.get_distance();
             }
-            time_matrix[i][destination] =
-                e.get_time();
+
+            if (e.get_time() < time_matrix[i][destination])
+            {
+                time_matrix[i][destination] = e.get_time();
+            }
         }
     }
 }
