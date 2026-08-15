@@ -3,22 +3,18 @@
 using namespace std::chrono;
 
 metro_system::metro_system()
-    : network(),
-      network_data(),
-      bfs(network),
-      dfs(network),
-      dijkstra(network),
-      a_star(network),
-      kruskal(network),
-      prim(network),
+    : network(),  network_data(),
+      bfs(network), dfs(network),
+      dijkstra(network), a_star(network),
+      kruskal(network), prim(network),
       express_path(express_network),
       bellman_ford(incentive_network),
-      passenger_sim(1), max_flow(network, 0.0)
-
+      passenger_sim(1), max_flow(network, 0.0) , floyd_warshall(network)
 {
     network_data.build_network(network);
     build_express_network();
     build_incentive_network(false);
+    floyd_warshall.recompute();
     max_flow.initialize(0.0);
 }
 
@@ -253,6 +249,37 @@ int metro_system::get_processed_passenger_count() const
 void metro_system::set_route_capacity(int from_id, int to_id, double capacity){
     max_flow.set_capacity(from_id, to_id, capacity);
 }
+
 max_flow_result metro_system::find_max_passengers(int source_id, int target_id){
     return max_flow.find_max_flow(source_id, target_id);
+}
+
+double metro_system::get_all_pairs_shortest_path(
+    int start_id,
+    int target_id, route_metric metric)
+{
+    if (start_id < 0 ||
+        start_id >= network.get_station_count() ||
+        target_id < 0 ||
+        target_id >= network.get_station_count())
+    {
+        throw out_of_range("invalid station_id");
+    }
+
+    return floyd_warshall.get_shortest_path(
+        start_id,
+        target_id,
+        metric
+    );
+}
+const vector<vector<double>>&
+metro_system::get_distance_matrix() const
+{
+    return floyd_warshall.get_distance_matrix();
+}
+
+const vector<vector<double>>&
+metro_system::get_time_matrix() const
+{
+    return floyd_warshall.get_time_matrix();
 }

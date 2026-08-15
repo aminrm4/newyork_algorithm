@@ -25,6 +25,7 @@ class metro_ui{
         void show_passenger_simulation();
 
         // Round 4
+        void show_all_pairs_shortest_path();
         void show_max_flow();
     public:
         explicit metro_ui(metro_system& system_ref);

@@ -20,6 +20,7 @@
 #include "passenger_simulator.h"
 
 #include "max_flow_algorithm.h"
+#include "floyd_warshall_algorithm.h"
 
 class metro_system
 {
@@ -45,6 +46,8 @@ private:
     network_analytics analytics;
     passenger_simulator passenger_sim;
     max_flow_algorithm max_flow;
+
+    floyd_warshall_algorithm floyd_warshall;
 
     void build_incentive_network(bool create_negative_cycle = false);
 
@@ -88,6 +91,9 @@ public:
     int get_processed_passenger_count() const;
 
     // Round 4
+    double get_all_pairs_shortest_path(int start_id, int target_id, route_metric metric);
+    const vector<vector<double>>& get_distance_matrix() const;
+    const vector<vector<double>>& get_time_matrix() const;
     max_flow_result find_max_passengers(int source_id, int target_id);
     void set_route_capacity(int from_id, int to_id, double capacity);
 };
