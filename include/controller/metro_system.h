@@ -46,14 +46,12 @@ private:
     passenger_simulator passenger_sim;
     max_flow_algorithm max_flow;
 
-    void build_express_network();
     void build_incentive_network(bool create_negative_cycle = false);
 
 public:
     metro_system();
     PathResult find_a_star_path(int start_id, int target_id, route_metric metric);
-        void build_express_network();
-        void build_incentive_network(bool create_negative_cycle = false);
+    void build_express_network();
 
     // Round 1
     PathResult find_path(int start_id, int target_id);

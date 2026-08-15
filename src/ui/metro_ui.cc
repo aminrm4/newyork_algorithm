@@ -24,9 +24,12 @@ void metro_ui::run(){
     show_network_analytics();
     cout << '\n';
     show_passenger_simulation();
-    show_a_star_path();
     cout << '\n';
     show_max_flow();
+
+
+
+    show_a_star_path();
 }
 
 void metro_ui::show_network_info(){
@@ -544,17 +547,10 @@ void metro_ui::show_max_flow(){
 
         cout << "\nMaximum passengers transferable: " << result.total_flow << '\n';
     }
-    catch (const out_of_range&)
-    {
-        cerr << "Invalid station ID.\n"
-             << "Valid IDs: 0 - "
-             << system.get_station_count() - 1
-             << '\n';
+    catch (const out_of_range&){
+        cerr << "Invalid station ID.\n" << "Valid IDs: 0 - " << system.get_station_count()-1 << '\n';
     }
-    catch (const invalid_argument& e)
-    {
-        cerr << "Invalid input: "
-             << e.what()
-             << '\n';
+    catch (const invalid_argument& e){
+        cerr << "Invalid input: " << e.what() << '\n';
     }
 }

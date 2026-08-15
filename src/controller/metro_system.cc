@@ -19,7 +19,7 @@ metro_system::metro_system()
     network_data.build_network(network);
     build_express_network();
     build_incentive_network(false);
-    max_flow.initialize(100.0);
+    max_flow.initialize(0.0);
 }
 
 PathResult metro_system::find_path(int start_id, int target_id)
@@ -250,24 +250,9 @@ int metro_system::get_processed_passenger_count() const
     return passenger_sim.processed_count();
 }
 
-void metro_system::set_route_capacity(
-    int from_id,
-    int to_id,
-    double capacity
-)
-{
-    max_flow.set_capacity(
-        from_id,
-        to_id,
-        capacity);
+void metro_system::set_route_capacity(int from_id, int to_id, double capacity){
+    max_flow.set_capacity(from_id, to_id, capacity);
 }
-max_flow_result metro_system::find_max_passengers(
-    int source_id,
-    int target_id
-)
-{
-    return max_flow.find_max_flow(
-        source_id,
-        target_id
-    );
+max_flow_result metro_system::find_max_passengers(int source_id, int target_id){
+    return max_flow.find_max_flow(source_id, target_id);
 }
