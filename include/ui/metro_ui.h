@@ -28,6 +28,7 @@ class metro_ui{
         void show_all_pairs_shortest_path();
         void show_max_flow();
         void show_critical_stations();
+        void show_emergency_team_placement();
     public:
         explicit metro_ui(metro_system& system_ref);
         void run();

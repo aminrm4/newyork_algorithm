@@ -22,6 +22,7 @@
 #include "max_flow_algorithm.h"
 #include "floyd_warshall_algorithm.h"
 #include "articulation_points_finder.h"
+#include "dominating_set_approximation.h"
 
 class metro_system
 {
@@ -50,6 +51,7 @@ private:
 
     floyd_warshall_algorithm floyd_warshall;
     articulation_points_finder articulation_finder;
+    dominating_set_approximation dominating_set;
 
     void build_incentive_network(bool create_negative_cycle = false);
 
@@ -99,5 +101,5 @@ public:
     max_flow_result find_max_passengers(int source_id, int target_id);
     void set_route_capacity(int from_id, int to_id, double capacity);
     articulation_result find_critical_stations();
-
+    vector<int> find_emergency_team_stations();
 };

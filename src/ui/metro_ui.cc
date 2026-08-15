@@ -30,6 +30,8 @@ void metro_ui::run(){
     show_max_flow();
     cout << '\n';
     show_critical_stations();
+    cout << '\n';
+    show_emergency_team_placement();
 
 
 
@@ -633,4 +635,16 @@ void metro_ui::show_critical_stations(){
             cout << "  " << system.get_station_name(bridge.first)
                  << " -- " << system.get_station_name(bridge.second) << '\n';
     }
+}
+void metro_ui::show_emergency_team_placement(){
+    cout << "--- T4.4: Emergency Team Placement ---\n";
+
+    vector<int> selected = system.find_emergency_team_stations();
+
+    cout << "\nSelected stations for emergency teams:\n";
+
+    for (int station_id : selected)
+        cout << "  " << system.get_station_name(station_id) << " (ID: " << station_id << ")\n";
+    
+    cout << "\nNumber of emergency teams: " << selected.size() << '\n';
 }

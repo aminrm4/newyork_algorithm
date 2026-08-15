@@ -10,7 +10,7 @@ metro_system::metro_system()
       express_path(express_network),
       bellman_ford(incentive_network),
       passenger_sim(1), max_flow(network, 0.0) , floyd_warshall(network)
-      , articulation_finder(network)
+      , articulation_finder(network), dominating_set(network)
 {
     network_data.build_network(network);
     build_express_network();
@@ -272,4 +272,7 @@ const vector<vector<double>>& metro_system::get_time_matrix() const{
 }
 articulation_result metro_system::find_critical_stations(){
     return articulation_finder.find();
+}
+vector<int> metro_system::find_emergency_team_stations(){
+    return dominating_set.find_dominating_set();
 }
