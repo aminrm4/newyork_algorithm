@@ -29,6 +29,7 @@ class metro_ui{
         void show_max_flow();
         void show_critical_stations();
         void show_emergency_team_placement();
+        void show_station_search();
     public:
         explicit metro_ui(metro_system& system_ref);
         void run();

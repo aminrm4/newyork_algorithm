@@ -23,6 +23,7 @@
 #include "floyd_warshall_algorithm.h"
 #include "articulation_points_finder.h"
 #include "dominating_set_approximation.h"
+#include "levenshtein_search.h"
 
 class metro_system
 {
@@ -52,6 +53,7 @@ private:
     floyd_warshall_algorithm floyd_warshall;
     articulation_points_finder articulation_finder;
     dominating_set_approximation dominating_set;
+    levenshtein_search levenshtein;
 
     void build_incentive_network(bool create_negative_cycle = false);
 
@@ -102,4 +104,5 @@ public:
     void set_route_capacity(int from_id, int to_id, double capacity);
     articulation_result find_critical_stations();
     vector<int> find_emergency_team_stations();
+    station find_closest_station(const std::string& name);
 };

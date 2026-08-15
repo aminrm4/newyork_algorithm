@@ -32,9 +32,8 @@ void metro_ui::run(){
     show_critical_stations();
     cout << '\n';
     show_emergency_team_placement();
-
-
-
+    cout << '\n';
+    show_station_search();
     show_a_star_path();
 }
 
@@ -121,7 +120,7 @@ void metro_ui::show_shortest_path(){
 }
 
 void metro_ui::show_a_star_path(){
-    cout << "--- A* vs Dijkstra ---\n";
+    cout << "---T5 A* vs Dijkstra ---\n";
 
     int start_id;
     int target_id;
@@ -647,4 +646,30 @@ void metro_ui::show_emergency_team_placement(){
         cout << "  " << system.get_station_name(station_id) << " (ID: " << station_id << ")\n";
     
     cout << "\nNumber of emergency teams: " << selected.size() << '\n';
+}
+
+void metro_ui::show_station_search(){
+    cout << "--- T4.6: Station Search with Typo Tolerance ---\n";
+
+    string query;
+    cout << "Enter station name: "; cin >> query;
+
+    try{
+        station result = system.find_closest_station(query);
+
+        cout << "\nClosest station:\n";
+        cout << "Station ID: "
+             << result.get_id()
+             << '\n';
+
+        cout << "Station name: "
+             << result.get_name()
+             << '\n';
+    }
+    catch (const exception& e)
+    {
+        cout << "Search failed: "
+             << e.what()
+             << '\n';
+    }
 }

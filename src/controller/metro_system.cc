@@ -11,6 +11,7 @@ metro_system::metro_system()
       bellman_ford(incentive_network),
       passenger_sim(1), max_flow(network, 0.0) , floyd_warshall(network)
       , articulation_finder(network), dominating_set(network)
+      , levenshtein(network)
 {
     network_data.build_network(network);
     build_express_network();
@@ -275,4 +276,8 @@ articulation_result metro_system::find_critical_stations(){
 }
 vector<int> metro_system::find_emergency_team_stations(){
     return dominating_set.find_dominating_set();
+}
+
+station metro_system::find_closest_station(const std::string& name){
+    return levenshtein.find_closest(name);
 }
