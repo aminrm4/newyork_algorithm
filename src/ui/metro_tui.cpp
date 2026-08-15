@@ -5,6 +5,13 @@
 #include <stdexcept>
 
 using namespace ftxui;
+const Color title_color = Color::Cyan;
+const Color section_color = Color::Yellow;
+const Color action_color = Color::Green;
+const Color back_color = Color::Red;
+const Color input_color = Color::White;
+const Color result_color = Color::White;
+const Color info_color = Color::GrayLight; 
 
 metro_tui::metro_tui(metro_system& system_ref)
     : system(system_ref),
@@ -133,16 +140,38 @@ Component metro_tui::wrap_screen(
         layout,
         [title, body, back_button, result_text]
         {
-            return vbox({
-                text(title) | bold | center,
-                separator(),
-                body->Render(),
-                separator(),
-                text("Result:") | bold,
-                paragraph(*result_text) | border,
-                separator(),
-                back_button->Render(),
-            }) | border;
+          return vbox({
+    text(title)
+        | bold
+        | color(title_color)
+        | center,
+
+    separator(),
+
+    body->Render(),
+
+    separator(),
+
+    text("Result:")
+        | bold
+        | color(section_color),
+
+    paragraph(*result_text)
+        | color(result_color)
+        | border,
+
+    separator(),
+
+    back_button->Render()
+        | color(back_color),
+})
+            // If the screen's content is taller than the terminal
+            // (e.g. many stations, many generated rows), scroll
+            // instead of silently clipping off buttons at the bottom.
+            | vscroll_indicator
+            | frame
+            | flex
+            | border;
         });
 }
 
@@ -161,7 +190,7 @@ Component metro_tui::build_main_menu_screen()
     return Renderer(menu, [this, menu]
     {
         return vbox({
-            text("Qom / New York Metro Routing System")
+            text(" welcome to Qom / New York Metro Routing System")
                 | bold
                 | center,
             separator(),
@@ -190,14 +219,14 @@ Component metro_tui::build_network_info_screen()
 {
     auto refresh_button =
         Button(
-            "Refresh",
+            "Refresh ",
             [this]
             {
                 refresh_network_info();
             });
 
     return wrap_screen(
-        "Network Info",
+        "Network Info ",
         refresh_button,
         &network_info_text);
 }
@@ -230,7 +259,9 @@ Component metro_tui::create_station_menu(
             return vbox({
                 text(label) | bold,
                 menu->Render()
+                    | vscroll_indicator
                     | frame
+                    | size(HEIGHT, LESS_THAN, 8)
                     | border
             });
         });
@@ -370,7 +401,7 @@ void metro_tui::run_shortest_path()
                 out << " -> ";
         }
 
-        out << "\nTotal cost: "
+        out << "\n Total cost:  "
             << result.total_cost;
 
         shortest_result =
@@ -387,12 +418,12 @@ Component metro_tui::build_shortest_path_screen()
 {
     auto start_menu =
         create_station_menu(
-            "Start station:",
+            "Start station: ",
             &shortest_start_index);
 
     auto target_menu =
         create_station_menu(
-            "Target station:",
+            "Target station: ",
             &shortest_target_index);
 
     auto metric_selector =
@@ -402,7 +433,7 @@ Component metro_tui::build_shortest_path_screen()
 
     auto run_button =
         Button(
-            "Find shortest path",
+            "Find shortest path ",
             [this]
             {
                 run_shortest_path();
@@ -417,7 +448,7 @@ Component metro_tui::build_shortest_path_screen()
         });
 
     return wrap_screen(
-        "Shortest Path (Dijkstra)",
+        "Shortest Path (Dijkstra) ",
         body,
         &shortest_result);
 }
@@ -433,7 +464,7 @@ void metro_tui::run_a_star_comparison()
     if (start_id == -1 || target_id == -1)
     {
         astar_result =
-            "Invalid station selection.";
+            "Invalid station selection. ";
         return;
     }
 
@@ -480,13 +511,13 @@ void metro_tui::run_a_star_comparison()
             }
         }
 
-        out << "\nA* total cost: "
+        out << "\n A* total cost: "
             << a_star_result.total_cost;
 
-        out << "\nA* expanded nodes: "
+        out << "\n A* expanded nodes: "
             << a_star_result.expanded_nodes;
 
-        out << "\nDijkstra expanded nodes: "
+        out << "\n Dijkstra expanded nodes: "
             << dijkstra_result.expanded_nodes;
 
         astar_result =
@@ -503,12 +534,12 @@ Component metro_tui::build_a_star_screen()
 {
     auto start_menu =
         create_station_menu(
-            "Start station:",
+            "Start station: ",
             &astar_start_index);
 
     auto target_menu =
         create_station_menu(
-            "Target station:",
+            "Target station: ",
             &astar_target_index);
 
     auto metric_selector =
@@ -518,7 +549,7 @@ Component metro_tui::build_a_star_screen()
 
     auto run_button =
         Button(
-            "Compare A* vs Dijkstra",
+            "Compare A* vs Dijkstra ",
             [this]
             {
                 run_a_star_comparison();
@@ -533,7 +564,7 @@ Component metro_tui::build_a_star_screen()
         });
 
     return wrap_screen(
-        "A* vs Dijkstra",
+        "A* vs Dijkstra ",
         body,
         &astar_result);
 }
@@ -549,13 +580,13 @@ void metro_tui::run_mst_comparison()
 
     std::ostringstream out;
 
-    out << "[Kruskal] Total cost: "
+    out << " [Kruskal] Total cost:  "
         << comparison.kruskal_result.total_weight
         << " | Edges: "
         << comparison.kruskal_result.edges.size()
         << " | Time: "
         << comparison.kruskal_time_ms
-        << " ms\n";
+        << " ms \n";
 
     out << "[Prim]    Total cost: "
         << comparison.prim_result.total_weight
@@ -563,16 +594,16 @@ void metro_tui::run_mst_comparison()
         << comparison.prim_result.edges.size()
         << " | Time: "
         << comparison.prim_time_ms
-        << " ms\n";
+        << "  ms\n";
 
     if (!comparison.kruskal_result.is_spanning_tree ||
         !comparison.prim_result.is_spanning_tree)
     {
-        out << "Note: The graph is not connected; "
-               "a complete spanning tree could not be created.\n";
+        out << " Note: The graph is not connected; "
+               "a complete spanning tree could not be created.\n ";
     }
 
-    out << "\nSelected edges (Kruskal):\n";
+    out << "\n Selected edges (Kruskal): \n";
 
     for (auto& e :
          comparison.kruskal_result.edges)
@@ -599,7 +630,7 @@ Component metro_tui::build_mst_screen()
 
     auto run_button =
         Button(
-            "Compare MST algorithms",
+            " Compare MST algorithms ",
             [this]
             {
                 run_mst_comparison();
@@ -612,7 +643,7 @@ Component metro_tui::build_mst_screen()
         });
 
     return wrap_screen(
-        "Minimum Cost Network (MST)",
+        " Minimum Cost Network (MST) ",
         body,
         &mst_result);
 }
@@ -630,7 +661,7 @@ void metro_tui::run_express_path()
     if (start_id == -1 || target_id == -1)
     {
         express_result =
-            "Invalid station selection.";
+            " Invalid station selection. ";
         return;
     }
 
@@ -644,7 +675,7 @@ void metro_tui::run_express_path()
         if (!result.reach_able)
         {
             express_result =
-                "No path exists on the express line.";
+                " No path exists on the express line. ";
             return;
         }
 
@@ -662,9 +693,9 @@ void metro_tui::run_express_path()
                 out << " -> ";
         }
 
-        out << "\nTotal time: "
+        out << "\n Total time: "
             << result.total_cost
-            << " minutes";
+            << " minutes ";
 
         express_result =
             out.str();
@@ -686,17 +717,17 @@ Component metro_tui::build_express_path_screen()
 {
     auto start_menu =
         create_station_menu(
-            "Start station:",
+            " Start station: ",
             &express_start_index);
 
     auto target_menu =
         create_station_menu(
-            "Target station:",
+            " Target station: ",
             &express_target_index);
 
     auto run_button =
         Button(
-            "Find express path",
+            " Find express path ",
             [this]
             {
                 run_express_path();
@@ -710,7 +741,7 @@ Component metro_tui::build_express_path_screen()
         });
 
     return wrap_screen(
-        "Express Path (DAG)",
+        " Express Path (DAG) ",
         body,
         &express_result);
 }
@@ -728,7 +759,7 @@ void metro_tui::run_incentive_path()
     if (start_id == -1 || target_id == -1)
     {
         incentive_result =
-            "Invalid station selection.";
+            " Invalid station selection. ";
         return;
     }
 
@@ -742,15 +773,15 @@ void metro_tui::run_incentive_path()
         if (result.negative_cycle_detected)
         {
             incentive_result =
-                "A negative cycle was detected "
-                "in the network.";
+                " A negative cycle was detected "
+                " in the network. ";
             return;
         }
 
         if (!result.reach_able)
         {
             incentive_result =
-                "No path exists between these stations.";
+                " No path exists between these stations. ";
             return;
         }
 
@@ -769,7 +800,7 @@ void metro_tui::run_incentive_path()
                 out << " -> ";
         }
 
-        out << "\nFinal cost (including incentives): "
+        out << "\n Final cost (including incentives): "
             << result.total_cost;
 
         incentive_result =
@@ -786,17 +817,17 @@ Component metro_tui::build_incentive_path_screen()
 {
     auto start_menu =
         create_station_menu(
-            "Start station:",
+            " Start station: ",
             &incentive_start_index);
 
     auto target_menu =
         create_station_menu(
-            "Target station:",
+            " Target station: ",
             &incentive_target_index);
 
     auto run_button =
         Button(
-            "Find incentive-aware path",
+            " Find incentive-aware path ",
             [this]
             {
                 run_incentive_path();
@@ -810,7 +841,7 @@ Component metro_tui::build_incentive_path_screen()
         });
 
     return wrap_screen(
-        "Incentive-Aware Path (Bellman-Ford)",
+        " Incentive-Aware Path (Bellman-Ford) ",
         body,
         &incentive_result);
 }
@@ -825,7 +856,7 @@ void metro_tui::regenerate_platform_rows()
         count < 0)
     {
         platform_result =
-            "Invalid number of trains.";
+            " Invalid number of trains . ";
         return;
     }
 
@@ -846,19 +877,19 @@ void metro_tui::regenerate_platform_rows()
     {
         auto arrival_input =
             labeled_input(
-                "Train " +
+                " Train " +
                 std::to_string(i + 1) +
-                " arrival:",
+                " arrival :",
                 &platform_arrivals[i],
-                "time");
+                " time ");
 
         auto departure_input =
             labeled_input(
-                "Train " +
+                " Train " +
                 std::to_string(i + 1) +
-                " departure:",
+                " departure: ",
                 &platform_departures[i],
-                "time");
+                " time ");
 
         auto row =
             Container::Horizontal({
@@ -871,7 +902,7 @@ void metro_tui::regenerate_platform_rows()
     }
 
     platform_result =
-        "Rows generated. Fill them in and press Run.";
+        " Rows generated. Fill them in and press Run. ";
 }
 
 void metro_tui::run_platform_scheduling()
@@ -919,18 +950,18 @@ void metro_tui::run_platform_scheduling()
 
     std::ostringstream out;
 
-    out << "Selected trains:\n";
+    out << " Selected trains: \n";
 
     for (const auto& t :
          selected_trains)
     {
-        out << "Train "
+        out << " Train "
             << t.get_id()
-            << " ["
+            << " [ "
             << t.get_arrival_time()
-            << ", "
+            << ",  "
             << t.get_departure_time()
-            << "]\n";
+            << "] \n";
     }
 
     out << "Maximum number of trains: "
@@ -944,13 +975,13 @@ Component metro_tui::build_platform_scheduling_screen()
 {
     auto count_input =
         labeled_input(
-            "Number of trains:",
+            " Number of trains: ",
             &platform_count_input,
-            "count");
+            " count ");
 
     auto generate_button =
         Button(
-            "Generate rows",
+            " Generate rows ",
             [this]
             {
                 regenerate_platform_rows();
@@ -958,7 +989,7 @@ Component metro_tui::build_platform_scheduling_screen()
 
     auto run_button =
         Button(
-            "Run scheduling",
+            " Run scheduling ",
             [this]
             {
                 run_platform_scheduling();
@@ -973,7 +1004,7 @@ Component metro_tui::build_platform_scheduling_screen()
         });
 
     return wrap_screen(
-        "Platform Scheduling (Max Trains)",
+        " Platform Scheduling (Max Trains) ",
         body,
         &platform_result);
 }
@@ -988,7 +1019,7 @@ void metro_tui::regenerate_dispatch_rows()
         count < 0)
     {
         dispatch_result =
-            "Invalid number of trains.";
+            " Invalid number of trains. ";
         return;
     }
 
@@ -1009,19 +1040,19 @@ void metro_tui::regenerate_dispatch_rows()
     {
         auto arrival_input =
             labeled_input(
-                "Train " +
+                " Train " +
                 std::to_string(i + 1) +
-                " arrival:",
+                " arrival: ",
                 &dispatch_arrivals[i],
-                "time");
+                " time ");
 
         auto departure_input =
             labeled_input(
-                "Train " +
+                " Train " +
                 std::to_string(i + 1) +
-                " departure:",
+                " departure: ",
                 &dispatch_departures[i],
-                "time");
+                " time ");
 
         auto row =
             Container::Horizontal({
@@ -1034,7 +1065,7 @@ void metro_tui::regenerate_dispatch_rows()
     }
 
     dispatch_result =
-        "Rows generated. Fill them in and press Run.";
+        " Rows generated. Fill them in and press Run. ";
 }
 
 void metro_tui::run_dispatch_queue()
@@ -1079,13 +1110,13 @@ void metro_tui::run_dispatch_queue()
 
     std::ostringstream out;
 
-    out << "Number of trains in queue: "
+    out << " Number of trains in queue: "
         << system.dispatch_queue_size()
         << "\n";
 
     if (system.dispatch_queue_empty())
     {
-        out << "Dispatch queue is empty.";
+        out << " Dispatch queue is empty. ";
         dispatch_result =
             out.str();
         return;
@@ -1094,7 +1125,7 @@ void metro_tui::run_dispatch_queue()
     train next =
         system.peek_next_train();
 
-    out << "Highest priority train: Train "
+    out << " Highest priority train: Train  "
         << next.get_id()
         << " ["
         << next.get_arrival_time()
@@ -1109,7 +1140,7 @@ void metro_tui::run_dispatch_queue()
         train dispatched =
             system.dispatch_next_train();
 
-        out << "Train "
+        out << " Train "
             << dispatched.get_id()
             << " ["
             << dispatched.get_arrival_time()
@@ -1126,13 +1157,13 @@ Component metro_tui::build_dispatch_queue_screen()
 {
     auto count_input =
         labeled_input(
-            "Number of trains:",
+            " Number of trains: ",
             &dispatch_count_input,
-            "count");
+            " count ");
 
     auto generate_button =
         Button(
-            "Generate rows",
+            " Generate rows ",
             [this]
             {
                 regenerate_dispatch_rows();
@@ -1140,7 +1171,7 @@ Component metro_tui::build_dispatch_queue_screen()
 
     auto run_button =
         Button(
-            "Enqueue and dispatch",
+            " Enqueue and dispatch ",
             [this]
             {
                 run_dispatch_queue();
@@ -1155,7 +1186,7 @@ Component metro_tui::build_dispatch_queue_screen()
         });
 
     return wrap_screen(
-        "Train Dispatch Priority Queue",
+        " Train Dispatch Priority Queue ",
         body,
         &dispatch_result);
 }
@@ -1170,7 +1201,7 @@ void metro_tui::regenerate_analytics_rows()
         count < 0)
     {
         analytics_result =
-            "Invalid number of trips.";
+            " Invalid number of trips. ";
         return;
     }
 
@@ -1187,11 +1218,11 @@ void metro_tui::regenerate_analytics_rows()
     {
         auto trip_input =
             labeled_input(
-                "Trip " +
+                " Trip " +
                 std::to_string(i + 1) +
-                " station:",
+                "  station: ",
                 &analytics_trip_ids[i],
-                "station ID");
+                " station ID ");
 
         analytics_rows_container
             ->Add(trip_input);
@@ -1296,13 +1327,13 @@ Component metro_tui::build_network_analytics_screen()
 {
     auto trip_count_input =
         labeled_input(
-            "Number of trips:",
+            " Number of trips: " ,
             &analytics_trip_count_input,
-            "count");
+            " count ");
 
     auto generate_button =
         Button(
-            "Generate trip rows",
+            " Generate trip rows ",
             [this]
             {
                 regenerate_analytics_rows();
@@ -1310,19 +1341,19 @@ Component metro_tui::build_network_analytics_screen()
 
     auto day_count_input =
         labeled_input(
-            "Number of days completed:",
+            " Number of days completed: ",
             &analytics_day_count_input,
-            "days");
+            " days ");
 
     auto k_input =
         labeled_input(
-            "k for kth busiest station:",
+            " k for kth busiest station: ",
             &analytics_k_input,
-            "k");
+            " k ");
 
     auto run_button =
         Button(
-            "Run analytics",
+            " Run analytics ",
             [this]
             {
                 run_network_analytics();
@@ -1339,7 +1370,7 @@ Component metro_tui::build_network_analytics_screen()
         });
 
     return wrap_screen(
-        "Network Operations Analytics",
+        " Network Operations Analytics ",
         body,
         &analytics_result);
 }
@@ -1397,7 +1428,7 @@ void metro_tui::run_passenger_simulation()
     std::ostringstream out;
 
     out << "Time | Queue size (after processing) | "
-           "Total processed so far\n";
+           " Total processed so far \n";
 
     out << "------------------------------------------------------------\n";
 
@@ -1447,7 +1478,7 @@ void metro_tui::run_passenger_simulation()
 
     out << "Average waiting time: "
         << system.get_avg_passenger_waiting_time()
-        << " time units";
+        << " time units ";
 
     passenger_result =
         out.str();
@@ -1457,25 +1488,25 @@ Component metro_tui::build_passenger_simulation_screen()
 {
     auto capacity_input =
         labeled_input(
-            "Gate capacity per step:",
+            " Gate capacity per step: ",
             &passenger_capacity_input,
-            "capacity");
+            " capacity " );
 
     auto steps_input =
         labeled_input(
-            "Number of time steps:",
+            " Number of time steps: ",
             &passenger_steps_input,
-            "steps");
+            " steps ");
 
     auto max_arrivals_input =
         labeled_input(
-            "Max random arrivals per step:",
+            " Max random arrivals per step: ",
             &passenger_max_arrivals_input,
-            "arrivals");
+            " arrivals ");
 
     auto run_button =
         Button(
-            "Run simulation",
+            " Run simulation ",
             [this]
             {
                 run_passenger_simulation();
@@ -1490,7 +1521,7 @@ Component metro_tui::build_passenger_simulation_screen()
         });
 
     return wrap_screen(
-        "Passenger Arrival Simulation",
+        " Passenger Arrival Simulation ",
         body,
         &passenger_result);
 }
@@ -1534,7 +1565,7 @@ void metro_tui::run_floyd_warshall()
 
         std::ostringstream out;
 
-        out << "Shortest path from "
+        out << " Shortest path from "
             << system.get_station_name(start_id)
             << " to "
             << system.get_station_name(target_id)
@@ -1560,12 +1591,12 @@ Component metro_tui::build_floyd_warshall_screen()
 {
     auto start_menu =
         create_station_menu(
-            "Start station:",
+            " Start station: ",
             &floyd_start_index);
 
     auto target_menu =
         create_station_menu(
-            "Target station:",
+            " Target station: ",
             &floyd_target_index);
 
     auto metric_selector =
@@ -1575,7 +1606,7 @@ Component metro_tui::build_floyd_warshall_screen()
 
     auto run_button =
         Button(
-            "Find all-pairs shortest path",
+            " Find all-pairs shortest path ",
             [this]
             {
                 run_floyd_warshall();
@@ -1590,7 +1621,7 @@ Component metro_tui::build_floyd_warshall_screen()
         });
 
     return wrap_screen(
-        "All-Pairs Shortest Path (Floyd-Warshall)",
+        " All-Pairs Shortest Path (Floyd-Warshall) ",
         body,
         &floyd_result);
 }
@@ -1632,23 +1663,23 @@ void metro_tui::regenerate_flow_rows()
             create_station_menu(
                 "Route " +
                 std::to_string(i + 1) +
-                " from:",
+                " from: ",
                 &flow_from_indices[i]);
 
         auto to_menu =
             create_station_menu(
                 "Route " +
                 std::to_string(i + 1) +
-                " to:",
+                " to: ",
                 &flow_to_indices[i]);
 
         auto capacity_input =
             labeled_input(
                 "Route " +
                 std::to_string(i + 1) +
-                " capacity:",
+                " capacity: ",
                 &flow_capacities[i],
-                "capacity");
+                "capacity ");
 
         auto row =
             Container::Vertical({
@@ -1753,23 +1784,23 @@ Component metro_tui::build_max_flow_screen()
 {
     auto source_menu =
         create_station_menu(
-            "Source station:",
+            " Source station: ",
             &flow_source_index);
 
     auto target_menu =
         create_station_menu(
-            "Target station:",
+            " Target station: ",
             &flow_target_index);
 
     auto count_input =
         labeled_input(
-            "Number of custom routes:",
+            " Number of custom routes: ",
             &flow_route_count_input,
-            "count");
+            "count " );
 
     auto generate_button =
         Button(
-            "Generate route rows",
+            " Generate route rows ",
             [this]
             {
                 regenerate_flow_rows();
@@ -1777,7 +1808,7 @@ Component metro_tui::build_max_flow_screen()
 
     auto run_button =
         Button(
-            "Compute max flow",
+            " Compute max flow ",
             [this]
             {
                 run_max_flow();
@@ -1941,7 +1972,7 @@ Component metro_tui::build_station_search_screen()
         labeled_input(
             "Station name:",
             &search_query,
-            "name");
+            " name ");
 
     auto run_button =
         Button(
