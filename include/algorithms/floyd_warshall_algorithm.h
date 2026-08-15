@@ -19,6 +19,8 @@ public:
         route_metric metric
     );
 
+    void recompute();
+
     const vector<vector<double>> &get_distance_matrix() const;
     const vector<vector<double>> &get_time_matrix() const;
 

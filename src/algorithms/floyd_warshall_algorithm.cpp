@@ -5,12 +5,7 @@
 floyd_warshall_algorithm::floyd_warshall_algorithm(
     interface_graph &graph_ref)
     : graph(graph_ref)
-{
-    initialize_matrices();
-
-    calculate(route_metric::DISTANCE);
-    calculate(route_metric::TIME);
-}
+{}
 
 void floyd_warshall_algorithm::initialize_matrices()
 {
@@ -94,8 +89,13 @@ double floyd_warshall_algorithm::get_shortest_path(
     int target_id,
     route_metric metric)
 {
-    if (metric == route_metric::DISTANCE)
-    {
+    int station_count = graph.get_station_count();
+
+    if (start_id < 0 || start_id >= station_count || target_id < 0 || target_id >= station_count){
+        throw out_of_range("invalid station_id");
+    }
+
+    if (metric == route_metric::DISTANCE){
         return distance_matrix[start_id][target_id];
     }
 
@@ -112,4 +112,10 @@ const vector<vector<double>> &
 floyd_warshall_algorithm::get_time_matrix() const
 {
     return time_matrix;
+}
+
+void floyd_warshall_algorithm::recompute() {
+    initialize_matrices();
+    calculate(route_metric::DISTANCE);
+    calculate(route_metric::TIME);
 }
