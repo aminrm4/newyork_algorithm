@@ -6,75 +6,90 @@
 #include <ftxui/screen/box.hpp>
 namespace
 {
-    class horizontal_drag_scroll_base : public ftxui::ComponentBase
+   class drag_scroll_base : public ftxui::ComponentBase
+{
+public:
+    explicit drag_scroll_base(ftxui::Component child)
     {
-    public:
-        explicit horizontal_drag_scroll_base(ftxui::Component child)
+        Add(std::move(child));
+    }
+
+    ftxui::Element Render() override
+    {
+        return ChildAt(0)->Render()
+             | ftxui::focusPositionRelative(scroll_ratio_x_, scroll_ratio_y_)
+             | ftxui::frame
+             | ftxui::reflect(box_);
+    }
+
+    bool OnEvent(ftxui::Event event) override
+    {
+        if (!event.is_mouse())
+            return ftxui::ComponentBase::OnEvent(event);
+
+        return OnMouseEvent(event);
+    }
+
+private:
+    bool OnMouseEvent(ftxui::Event event)
+    {
+        ftxui::Mouse mouse = event.mouse();
+
+        bool handled_by_child = ftxui::ComponentBase::OnEvent(event);
+
+        if (mouse.motion == ftxui::Mouse::Released)
         {
-            Add(std::move(child));
+            dragging_ = false;
+            return handled_by_child;
         }
 
-        ftxui::Element Render() override
+        if (handled_by_child)
+            return true;
+
+        if (mouse.button != ftxui::Mouse::Left || mouse.motion != ftxui::Mouse::Pressed)
+            return false;
+
+        if (!box_.Contain(mouse.x, mouse.y))
+            return false;
+
+        if (!dragging_)
         {
-            return ChildAt(0)->Render() | ftxui::focusPositionRelative(scroll_ratio_, 0.f) | ftxui::xframe | ftxui::reflect(box_);
-        }
-
-        bool OnEvent(ftxui::Event event) override
-        {
-            if (!event.is_mouse())
-                return ftxui::ComponentBase::OnEvent(event);
-
-            return OnMouseEvent(event);
-        }
-
-    private:
-        bool OnMouseEvent(ftxui::Event event)
-        {
-            ftxui::Mouse mouse = event.mouse();
-
-            bool handled_by_child = ftxui::ComponentBase::OnEvent(event);
-
-            if (mouse.motion == ftxui::Mouse::Released)
-            {
-                dragging_ = false;
-                return handled_by_child;
-            }
-
-            if (handled_by_child)
-                return true;
-
-            if (mouse.button != ftxui::Mouse::Left || mouse.motion != ftxui::Mouse::Pressed)
-                return false;
-
-            if (!box_.Contain(mouse.x, mouse.y))
-                return false;
-
-            if (!dragging_)
-            {
-                dragging_ = true;
-                drag_start_x_ = mouse.x;
-                drag_start_ratio_ = scroll_ratio_;
-                return true;
-            }
-
-            int width = std::max(1, box_.x_max - box_.x_min);
-            int delta = mouse.x - drag_start_x_;
-            scroll_ratio_ = drag_start_ratio_ - static_cast<double>(delta) / static_cast<double>(width);
-            scroll_ratio_ = std::max(0.0, std::min(1.0, scroll_ratio_));
+            dragging_ = true;
+            drag_start_x_ = mouse.x;
+            drag_start_y_ = mouse.y;
+            drag_start_ratio_x_ = scroll_ratio_x_;
+            drag_start_ratio_y_ = scroll_ratio_y_;
             return true;
         }
 
-        ftxui::Box box_;
-        double scroll_ratio_ = 0.0;
-        bool dragging_ = false;
-        int drag_start_x_ = 0;
-        double drag_start_ratio_ = 0.0;
-    };
+        int width = std::max(1, box_.x_max - box_.x_min);
+        int height = std::max(1, box_.y_max - box_.y_min);
+        int delta_x = mouse.x - drag_start_x_;
+        int delta_y = mouse.y - drag_start_y_;
 
-    ftxui::Component horizontal_drag_scroll(ftxui::Component child)
-    {
-        return ftxui::Make<horizontal_drag_scroll_base>(std::move(child));
+        scroll_ratio_x_ = drag_start_ratio_x_ - static_cast<double>(delta_x) / static_cast<double>(width);
+        scroll_ratio_y_ = drag_start_ratio_y_ - static_cast<double>(delta_y) / static_cast<double>(height);
+        scroll_ratio_x_ = std::max(0.0, std::min(1.0, scroll_ratio_x_));
+        scroll_ratio_y_ = std::max(0.0, std::min(1.0, scroll_ratio_y_));
+        return true;
     }
+
+    ftxui::Box box_;
+    double scroll_ratio_x_ = 0.0;
+    double scroll_ratio_y_ = 0.0;
+    bool dragging_ = false;
+    int drag_start_x_ = 0;
+    int drag_start_y_ = 0;
+    double drag_start_ratio_x_ = 0.0;
+    double drag_start_ratio_y_ = 0.0;
+};
+
+ftxui::Component drag_scroll(ftxui::Component child)
+{
+    return ftxui::Make<drag_scroll_base>(std::move(child));
+}
+
+    
     ftxui::Element render_multiline(const std::string &content)
     {
         std::vector<std::string> lines;
@@ -251,7 +266,7 @@ Component metro_tui::wrap_screen(
                    border;
         });
 
-    return horizontal_drag_scroll(screen_renderer);
+    return drag_scroll(screen_renderer);
 }
 
 Component metro_tui::build_main_menu_screen()
@@ -276,7 +291,7 @@ Component metro_tui::build_main_menu_screen()
                                              }) |
                                              border; });
 
-    return horizontal_drag_scroll(screen_renderer);
+    return drag_scroll(screen_renderer);
 }
 void metro_tui::refresh_network_info()
 {
@@ -321,21 +336,22 @@ int metro_tui::get_station_id(int selected_index) const
 }
 
 Component metro_tui::create_station_menu(
-    const std::string &label,
-    int *selected_index)
+    const std::string& label,
+    int* selected_index)
 {
-    auto menu =
-        Menu(
-            &station_names,
-            selected_index);
+    auto menu = Menu(&station_names, selected_index);
 
-    return Renderer(
-        menu,
-        [label, menu]
-        {
-            return vbox({text(label) | bold,
-                         menu->Render() | vscroll_indicator | frame | size(HEIGHT, LESS_THAN, 8) | border});
+    return Renderer(menu, [label, menu]
+    {
+        return vbox({
+            text(label) | bold,
+            menu->Render()
+                | vscroll_indicator
+                | frame
+                | size(HEIGHT, LESS_THAN, 8)
+                | border
         });
+    });
 }
 
 void metro_tui::run_accessibility()
