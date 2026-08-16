@@ -89,6 +89,100 @@ ftxui::Component drag_scroll(ftxui::Component child)
     return ftxui::Make<drag_scroll_base>(std::move(child));
 }
 
+ftxui::Element render_multiline(const std::string &content);
+
+class result_box_base : public ftxui::ComponentBase
+{
+public:
+    result_box_base(const std::string *content, int max_height)
+        : content_(content), max_height_(max_height)
+    {
+    }
+
+    ftxui::Element Render() override
+    {
+        return render_multiline(*content_)
+             | ftxui::focusPositionRelative(0.0, scroll_ratio_y_)
+             | ftxui::vscroll_indicator
+             | ftxui::frame
+             | ftxui::reflect(box_)
+             | ftxui::size(ftxui::HEIGHT, ftxui::LESS_THAN, max_height_)
+             | ftxui::border;
+    }
+
+    bool OnEvent(ftxui::Event event) override
+    {
+        if (!event.is_mouse())
+            return ftxui::ComponentBase::OnEvent(event);
+
+        return OnMouseEvent(event);
+    }
+
+private:
+    bool OnMouseEvent(ftxui::Event event)
+    {
+        ftxui::Mouse mouse = event.mouse();
+
+        if (mouse.motion == ftxui::Mouse::Released)
+        {
+            dragging_ = false;
+        }
+
+        if (!box_.Contain(mouse.x, mouse.y))
+            return false;
+
+        if (mouse.button == ftxui::Mouse::WheelDown)
+        {
+            scroll_ratio_y_ = std::min(1.0, scroll_ratio_y_ + 0.08);
+            return true;
+        }
+
+        if (mouse.button == ftxui::Mouse::WheelUp)
+        {
+            scroll_ratio_y_ = std::max(0.0, scroll_ratio_y_ - 0.08);
+            return true;
+        }
+
+        if (mouse.button != ftxui::Mouse::Left)
+            return false;
+
+        if (mouse.motion == ftxui::Mouse::Pressed && !dragging_)
+        {
+            dragging_ = true;
+            drag_start_y_ = mouse.y;
+            drag_start_ratio_y_ = scroll_ratio_y_;
+            return true;
+        }
+
+        if (mouse.motion == ftxui::Mouse::Pressed && dragging_)
+        {
+            int height = std::max(1, box_.y_max - box_.y_min);
+            int delta_y = mouse.y - drag_start_y_;
+
+            scroll_ratio_y_ =
+                drag_start_ratio_y_ -
+                static_cast<double>(delta_y) / static_cast<double>(height);
+            scroll_ratio_y_ = std::max(0.0, std::min(1.0, scroll_ratio_y_));
+            return true;
+        }
+
+        return false;
+    }
+
+    const std::string *content_;
+    int max_height_;
+    ftxui::Box box_;
+    double scroll_ratio_y_ = 0.0;
+    bool dragging_ = false;
+    int drag_start_y_ = 0;
+    double drag_start_ratio_y_ = 0.0;
+};
+
+ftxui::Component result_box(const std::string *content, int max_height)
+{
+    return ftxui::Make<result_box_base>(content, max_height);
+}
+
     
     ftxui::Element render_multiline(const std::string &content)
     {
@@ -114,6 +208,25 @@ ftxui::Component drag_scroll(ftxui::Component child)
             rendered_lines.push_back(ftxui::text(line));
 
         return ftxui::vbox(std::move(rendered_lines));
+    }
+
+    ftxui::Component make_scrollable_rows(
+        ftxui::Component child,
+        int max_height)
+    {
+        return ftxui::Renderer(
+            child,
+            [child, max_height]
+            {
+                return child->Render()
+                       | ftxui::vscroll_indicator
+                       | ftxui::frame
+                       | ftxui::size(
+                             ftxui::HEIGHT,
+                             ftxui::LESS_THAN,
+                             max_height)
+                       | ftxui::border;
+            });
     }
 }
 using namespace ftxui;
@@ -147,7 +260,10 @@ metro_tui::metro_tui(metro_system &system_ref)
       floyd_target_index(1),
       floyd_metric_index(0),
       flow_source_index(0),
-      flow_target_index(1)
+      flow_target_index(1),
+      flow_current_route_index(0),
+      flow_editor_from_index(0),
+      flow_editor_to_index(1)
 {
     metric_labels = {"Distance", "Time"};
 
@@ -216,8 +332,131 @@ route_metric metro_tui::metric_from_index(int index)
     return index == 0 ? route_metric::DISTANCE : route_metric::TIME;
 }
 
+void metro_tui::reset_current_screen()
+{
+    switch (selected_tab)
+    {
+        case 1: // Network Info
+            network_info_text.clear();
+            refresh_network_info();
+            break;
+
+        case 2: // Accessibility (BFS)
+            accessibility_start_index = 0;
+            accessibility_target_index = 1;
+            accessibility_result.clear();
+            break;
+
+        case 3: // Dijkstra
+            shortest_start_index = 0;
+            shortest_target_index = 1;
+            shortest_metric_index = 0;
+            shortest_result.clear();
+            break;
+
+        case 4: // A* vs Dijkstra
+            astar_start_index = 0;
+            astar_target_index = 1;
+            astar_metric_index = 0;
+            astar_result.clear();
+            break;
+
+        case 5: // MST
+            mst_metric_index = 0;
+            mst_result.clear();
+            break;
+
+        case 6: // Express Path
+            express_start_index = 0;
+            express_target_index = 1;
+            express_result.clear();
+            break;
+
+        case 7: // Bellman-Ford
+            incentive_start_index = 0;
+            incentive_target_index = 1;
+            incentive_result.clear();
+            break;
+
+        case 8: // Platform Scheduling
+            platform_count_input.clear();
+            platform_arrivals.clear();
+            platform_departures.clear();
+            platform_result.clear();
+            if (platform_rows_container)
+                platform_rows_container->DetachAllChildren();
+            break;
+
+        case 9: // Train Dispatch Queue
+            dispatch_count_input.clear();
+            dispatch_arrivals.clear();
+            dispatch_departures.clear();
+            dispatch_result.clear();
+            if (dispatch_rows_container)
+                dispatch_rows_container->DetachAllChildren();
+            break;
+
+        case 10: // Network Analytics
+            analytics_trip_count_input.clear();
+            analytics_trip_ids.clear();
+            analytics_day_count_input.clear();
+            analytics_k_input.clear();
+            analytics_result.clear();
+            if (analytics_rows_container)
+                analytics_rows_container->DetachAllChildren();
+            break;
+
+        case 11: // Passenger Simulation
+            passenger_capacity_input.clear();
+            passenger_steps_input.clear();
+            passenger_max_arrivals_input.clear();
+            passenger_result.clear();
+            break;
+
+        case 12: // Floyd-Warshall
+            floyd_start_index = 0;
+            floyd_target_index = 1;
+            floyd_metric_index = 0;
+            floyd_result.clear();
+            break;
+
+        case 13: // Max Flow
+            flow_source_index = 0;
+            flow_target_index = 1;
+            flow_route_count_input.clear();
+            flow_from_indices.clear();
+            flow_to_indices.clear();
+            flow_capacities.clear();
+            flow_current_route_index = 0;
+            flow_editor_from_index = 0;
+            flow_editor_to_index = 1;
+            flow_editor_capacity.clear();
+            flow_result.clear();
+            if (flow_rows_container)
+                flow_rows_container->DetachAllChildren();
+            break;
+
+        case 14: // Critical Stations
+            critical_result.clear();
+            break;
+
+        case 15: // Emergency Team Placement
+            emergency_result.clear();
+            break;
+
+        case 16: // Station Search
+            search_query.clear();
+            search_result.clear();
+            break;
+
+        default:
+            break;
+    }
+}
+
 void metro_tui::go_back()
 {
+    reset_current_screen();
     selected_tab = 0;
 }
 
@@ -243,30 +482,45 @@ Component metro_tui::wrap_screen(
     std::string *result_text)
 {
     auto back_button =
-        Button("Back to menu", [this]
-               { go_back(); });
+        Button(
+            "Back to menu",
+            [this]
+            {
+                go_back();
+            });
+
+    auto result_display =
+        result_box(result_text, 8);
 
     auto layout =
-        Container::Vertical({body, back_button});
+        Container::Vertical({body, result_display, back_button});
 
-    auto screen_renderer = Renderer(
+    return Renderer(
         layout,
-        [title, body, back_button, result_text]
+        [title, body, back_button, result_display]
         {
             return vbox({
-                       text(title) | bold | center,
-                       separator(),
-                       body->Render(),
-                       separator(),
-                       text("Result:") | bold,
-                       render_multiline(*result_text) | border,
-                       separator(),
-                       back_button->Render(),
-                   }) |
-                   border;
-        });
+                       text(title)
+                           | bold
+                           | center,
 
-    return drag_scroll(screen_renderer);
+                       separator(),
+
+                       body->Render(),
+
+                       separator(),
+
+                       text("Result:")
+                           | bold,
+
+                       result_display->Render(),
+
+                       separator(),
+
+                       back_button->Render(),
+                   })
+                   | border;
+        });
 }
 
 Component metro_tui::build_main_menu_screen()
@@ -698,6 +952,20 @@ void metro_tui::run_mst_comparison()
             << ")\n";
     }
 
+    out << "\n Selected edges (Prim): \n";
+
+    for (auto &e :
+         comparison.prim_result.edges)
+    {
+        out << "  "
+            << system.get_station_name(e.from)
+            << " -- "
+            << system.get_station_name(e.to)
+            << " ("
+            << e.weight
+            << ")\n";
+    }
+
     mst_result =
         out.str();
 }
@@ -1068,10 +1336,15 @@ Component metro_tui::build_platform_scheduling_screen()
                 run_platform_scheduling();
             });
 
+    auto platform_rows_view =
+        make_scrollable_rows(
+            platform_rows_container,
+            12);
+
     auto body =
         Container::Vertical({count_input,
                              generate_button,
-                             platform_rows_container,
+                             platform_rows_view,
                              run_button});
 
     return wrap_screen(
@@ -1246,10 +1519,15 @@ Component metro_tui::build_dispatch_queue_screen()
                 run_dispatch_queue();
             });
 
+    auto dispatch_rows_view =
+        make_scrollable_rows(
+            dispatch_rows_container,
+            12);
+
     auto body =
         Container::Vertical({count_input,
                              generate_button,
-                             dispatch_rows_container,
+                             dispatch_rows_view,
                              run_button});
 
     return wrap_screen(
@@ -1426,11 +1704,16 @@ Component metro_tui::build_network_analytics_screen()
                 run_network_analytics();
             });
 
+    auto analytics_rows_view =
+        make_scrollable_rows(
+            analytics_rows_container,
+            12);
+
     auto body =
         Container::Vertical({
             trip_count_input,
             generate_button,
-            analytics_rows_container,
+            analytics_rows_view,
             day_count_input,
             k_input,
             run_button,
@@ -1688,88 +1971,107 @@ Component metro_tui::build_floyd_warshall_screen()
         &floyd_result);
 }
 
+void metro_tui::save_flow_route()
+{
+    if (flow_current_route_index < 0 ||
+        flow_current_route_index >=
+            static_cast<int>(flow_capacities.size()))
+    {
+        return;
+    }
+
+    flow_from_indices[flow_current_route_index] =
+        flow_editor_from_index;
+
+    flow_to_indices[flow_current_route_index] =
+        flow_editor_to_index;
+
+    flow_capacities[flow_current_route_index] =
+        flow_editor_capacity;
+}
+
+void metro_tui::load_flow_route()
+{
+    if (flow_current_route_index < 0 ||
+        flow_current_route_index >=
+            static_cast<int>(flow_capacities.size()))
+    {
+        flow_editor_from_index = 0;
+        flow_editor_to_index = 1;
+        flow_editor_capacity.clear();
+        return;
+    }
+
+    flow_editor_from_index =
+        flow_from_indices[flow_current_route_index];
+
+    flow_editor_to_index =
+        flow_to_indices[flow_current_route_index];
+
+    flow_editor_capacity =
+        flow_capacities[flow_current_route_index];
+}
+
 void metro_tui::regenerate_flow_rows()
 {
     int count;
 
-    if (!try_parse_int(
-            flow_route_count_input,
-            count) ||
+    if (!try_parse_int(flow_route_count_input, count) ||
         count < 0)
     {
-        flow_result =
-            "Invalid route count.";
+        flow_result = "Invalid route count.";
         return;
     }
 
-    flow_from_indices.assign(
-        count,
-        0);
-
-    flow_to_indices.assign(
-        count,
-        0);
-
-    flow_capacities.assign(
-        count,
-        "");
-
-    flow_rows_container
-        ->DetachAllChildren();
-
-    for (int i = 0;
-         i < count;
-         ++i)
+    if (count == 0)
     {
-        auto from_menu =
-            create_station_menu(
-                "Route " +
-                    std::to_string(i + 1) +
-                    " from: ",
-                &flow_from_indices[i]);
-
-        auto to_menu =
-            create_station_menu(
-                "Route " +
-                    std::to_string(i + 1) +
-                    " to: ",
-                &flow_to_indices[i]);
-
-        auto capacity_input =
-            labeled_input(
-                "Route " +
-                    std::to_string(i + 1) +
-                    " capacity: ",
-                &flow_capacities[i],
-                "capacity ");
-
-        auto row =
-            Container::Vertical({from_menu,
-                                 to_menu,
-                                 capacity_input});
-
-        flow_rows_container
-            ->Add(row);
+        flow_from_indices.clear();
+        flow_to_indices.clear();
+        flow_capacities.clear();
+        flow_current_route_index = 0;
+        flow_editor_from_index = 0;
+        flow_editor_to_index = 1;
+        flow_editor_capacity.clear();
+        flow_result = "Enter at least one custom route.";
+        return;
     }
 
+    flow_from_indices.assign(count, 0);
+    flow_to_indices.assign(count, 0);
+    flow_capacities.assign(count, "");
+
+    flow_current_route_index = 0;
+    load_flow_route();
+
     flow_result =
-        "Rows generated. Select stations, enter capacities and press Run.";
+        "Routes created. Use Previous / Next to edit each route.";
 }
 
 void metro_tui::run_max_flow()
 {
+    save_flow_route();
+
     int source_id =
-        get_station_id(
-            flow_source_index);
+        get_station_id(flow_source_index);
 
     int target_id =
-        get_station_id(
-            flow_target_index);
+        get_station_id(flow_target_index);
 
     if (source_id == -1 || target_id == -1)
     {
-        flow_result =
-            "Invalid station selection.";
+        flow_result = "Invalid source or target station.";
+        return;
+    }
+
+    if (source_id == target_id)
+    {
+        flow_result = "Source and target stations must be different.";
+        return;
+    }
+
+    if (flow_from_indices.empty())
+    {
+        flow_result = "Generate at least one custom route first.";
         return;
     }
 
@@ -1780,12 +2082,10 @@ void metro_tui::run_max_flow()
              ++i)
         {
             int from_id =
-                get_station_id(
-                    flow_from_indices[i]);
+                get_station_id(flow_from_indices[i]);
 
             int to_id =
-                get_station_id(
-                    flow_to_indices[i]);
+                get_station_id(flow_to_indices[i]);
 
             double capacity;
 
@@ -1798,7 +2098,16 @@ void metro_tui::run_max_flow()
                 flow_result =
                     "Invalid input in route " +
                     std::to_string(i + 1) +
-                    ".";
+                    ". Enter a numeric capacity.";
+                return;
+            }
+
+            if (from_id == to_id)
+            {
+                flow_result =
+                    "Route " +
+                    std::to_string(i + 1) +
+                    " cannot have the same source and target station.";
                 return;
             }
 
@@ -1822,21 +2131,20 @@ void metro_tui::run_max_flow()
                 source_id,
                 target_id);
 
-        flow_result =
-            "Maximum passengers transferable: " +
-            std::to_string(
-                result.total_flow);
+        std::ostringstream out;
+        out << "Maximum passengers transferable: "
+            << result.total_flow;
+
+        flow_result = out.str();
     }
     catch (const std::out_of_range &)
     {
-        flow_result =
-            "Invalid station selection.";
+        flow_result = "Invalid station selection.";
     }
     catch (const std::invalid_argument &e)
     {
         flow_result =
-            std::string("Invalid input: ") +
-            e.what();
+            std::string("Invalid input: ") + e.what();
     }
 }
 
@@ -1844,35 +2152,191 @@ Component metro_tui::build_max_flow_screen()
 {
     auto source_menu =
         create_station_menu(
-            " Source station: ",
+            "Source station",
             &flow_source_index);
 
     auto target_menu =
         create_station_menu(
-            " Target station: ",
+            "Target station",
             &flow_target_index);
 
     auto count_input =
         labeled_input(
-            " Number of custom routes: ",
+            "Custom routes:",
             &flow_route_count_input,
-            "count ");
+            "e.g. 3");
 
     auto generate_button =
         Button(
-            " Generate route rows ",
+            "Generate routes",
             [this]
             {
                 regenerate_flow_rows();
             });
 
+    auto previous_button =
+        Button(
+            "< Previous",
+            [this]
+            {
+                if (flow_current_route_index > 0)
+                {
+                    save_flow_route();
+                    --flow_current_route_index;
+                    load_flow_route();
+                }
+            });
+
+    auto next_button =
+        Button(
+            "Next >",
+            [this]
+            {
+                if (flow_current_route_index + 1 <
+                    static_cast<int>(flow_capacities.size()))
+                {
+                    save_flow_route();
+                    ++flow_current_route_index;
+                    load_flow_route();
+                }
+            });
+
+    auto from_menu =
+        create_station_menu(
+            "Route from",
+            &flow_editor_from_index);
+
+    auto to_menu =
+        create_station_menu(
+            "Route to",
+            &flow_editor_to_index);
+
+    auto capacity_input =
+        labeled_input(
+            "Capacity:",
+            &flow_editor_capacity,
+            "e.g. 100");
+
     auto run_button =
         Button(
-            " Compute max flow ",
+            "Compute Max Flow",
             [this]
             {
                 run_max_flow();
             });
+
+    auto route_navigation =
+        Renderer(
+            Container::Horizontal({
+                previous_button,
+                next_button
+            }),
+            [this, previous_button, next_button]
+            {
+                std::string route_text =
+                    flow_capacities.empty()
+                        ? "No routes generated"
+                        : "Editing route " +
+                              std::to_string(flow_current_route_index + 1) +
+                              " of " +
+                              std::to_string(flow_capacities.size());
+
+                return hbox({
+                    previous_button->Render(),
+                    filler(),
+                    text(route_text) | bold | center,
+                    filler(),
+                    next_button->Render()
+                });
+            });
+
+    auto route_editor =
+        Renderer(
+            Container::Vertical({
+                from_menu,
+                to_menu,
+                capacity_input
+            }),
+            [this, from_menu, to_menu, capacity_input]
+            {
+                if (flow_capacities.empty())
+                {
+                    return vbox({
+                        text("Generate custom routes to edit them.")
+                            | color(info_color)
+                            | center
+                    }) | border;
+                }
+
+                return vbox({
+                    text(
+                        "Route " +
+                        std::to_string(flow_current_route_index + 1) +
+                        " configuration")
+                        | bold
+                        | color(section_color),
+
+                    separator(),
+
+                    hbox({
+                        from_menu->Render() | flex,
+                        separator(),
+                        to_menu->Render() | flex
+                    }),
+
+                    separator(),
+
+                    capacity_input->Render()
+                }) | border;
+            });
+
+    auto setup =
+        Renderer(
+            Container::Vertical({
+                source_menu,
+                target_menu,
+                count_input,
+                generate_button
+            }),
+            [this, source_menu, target_menu, count_input, generate_button]
+            {
+                auto source_target =
+                    hbox({
+                        source_menu->Render() | flex,
+                        separator(),
+                        target_menu->Render() | flex
+                    });
+
+                return vbox({
+                    text("NETWORK")
+                        | bold
+                        | color(section_color),
+
+                    source_target,
+
+                    separator(),
+
+                    hbox({
+                        count_input->Render() | flex,
+                        text("  "),
+                        generate_button->Render()
+                    })
+                });
+            });
+
+    auto run_area =
+        Renderer(
+            run_button,
+            [this, run_button]
+            {
+                return vbox({
+                    separator(),
+                    run_button->Render() | center
+                });
+            });
+
+    auto flow_result_display =
+        result_box(&flow_result, 6);
 
     auto body =
         Container::Vertical({
@@ -1880,14 +2344,52 @@ Component metro_tui::build_max_flow_screen()
             target_menu,
             count_input,
             generate_button,
-            flow_rows_container,
+            previous_button,
+            next_button,
+            from_menu,
+            to_menu,
+            capacity_input,
             run_button,
+            flow_result_display
         });
 
-    return wrap_screen(
-        "Network Capacity During Peak Hours (Max Flow)",
+    return Renderer(
         body,
-        &flow_result);
+        [this, setup, route_navigation, route_editor, run_area, flow_result_display]
+        {
+            return vbox({
+                text("Network Capacity During Peak Hours (Max Flow)")
+                    | bold
+                    | color(title_color)
+                    | center,
+
+                separator(),
+
+                setup->Render(),
+
+                separator(),
+
+                route_navigation->Render(),
+
+                route_editor->Render(),
+
+                run_area->Render(),
+
+                separator(),
+
+                text("Result")
+                    | bold
+                    | color(section_color),
+
+                flow_result_display->Render(),
+
+                separator(),
+
+                text("Esc: Back to menu")
+                    | color(info_color)
+                    | center
+            }) | border;
+        });
 }
 
 void metro_tui::run_critical_stations()
