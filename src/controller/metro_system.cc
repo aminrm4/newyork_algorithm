@@ -97,6 +97,20 @@ void metro_system::build_express_network()
             }
         }
     }
+
+    for (size_t i {}; i + 3 < express_route.size(); i++)
+    {
+        int from = network.find_station_id(express_route[i]);
+        int to = network.find_station_id(express_route[i + 3]);
+
+        if (from == -1 || to == -1)
+            continue;
+        
+        express_network.add_edge(from, to, 2);
+                
+    }
+
+
 }
 
 PathResult metro_system::find_express_path(int start_id, int target_id)
