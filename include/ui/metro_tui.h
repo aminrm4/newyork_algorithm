@@ -132,10 +132,19 @@ private:
     std::vector<int> flow_from_indices;
     std::vector<int> flow_to_indices;
     std::vector<std::string> flow_capacities;
+
+    // Max-flow route editor. Only one custom route is edited at a time.
+    int flow_current_route_index;
+    int flow_editor_from_index;
+    int flow_editor_to_index;
+    std::string flow_editor_capacity;
+
     ftxui::Component flow_rows_container;
     std::string flow_result;
     ftxui::Component build_max_flow_screen();
     void regenerate_flow_rows();
+    void load_flow_route();
+    void save_flow_route();
     void run_max_flow();
 
     // critical stations screen
@@ -166,6 +175,7 @@ private:
         const std::string& placeholder
     );
 
+    void reset_current_screen();
     void go_back();
     route_metric metric_from_index(int index);
     bool try_parse_int(const std::string& text, int& out);
