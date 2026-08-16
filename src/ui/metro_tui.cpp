@@ -2338,7 +2338,7 @@ Component metro_tui::build_max_flow_screen()
     auto flow_result_display =
         result_box(&flow_result, 6);
 
-    auto body =
+    /*auto body =
         Container::Vertical({
             source_menu,
             target_menu,
@@ -2352,7 +2352,15 @@ Component metro_tui::build_max_flow_screen()
             run_button,
             flow_result_display
         });
-
+        */
+auto body =
+        Container::Vertical({
+            setup,
+            route_navigation,
+            route_editor,
+            run_area,
+            flow_result_display
+        });
     return Renderer(
         body,
         [this, setup, route_navigation, route_editor, run_area, flow_result_display]
