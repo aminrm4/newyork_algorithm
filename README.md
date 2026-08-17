@@ -210,7 +210,7 @@ _Class diagram showing the relationships between the core graph model, the algor
 
 ## 🧪 Testing
 
-Test cases live under `tests/` and are organized **by project round**, mirroring the deliverable structure of the course (`test_round3.cpp`), so each file validates exactly the tasks completed in that round.
+Test cases live under `tests/` and are organized **by project round**, mirroring the deliverable structure of the course (`test_round3.cpp`), this file validates exactly the tasks completed in that round.
 
 `tests/test_round3.cpp` covers Round 3 of the project:
 
